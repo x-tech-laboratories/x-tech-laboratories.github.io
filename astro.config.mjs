@@ -24,6 +24,7 @@ export default defineConfig({
 			],
 			sidebar: [
 				{ label: 'Guidelines', items: [{ autogenerate: { directory: 'guidelines' } }] },
+				{ label: 'Standards', items: [{ autogenerate: { directory: 'standards' } }] },
 				{ label: 'Projects', slug: 'projects' },
 				{ label: 'Awesome AI-Assisted Open Source', slug: 'awesome' },
 				{ label: 'Get involved', slug: 'join' },
