@@ -1,0 +1,7 @@
+version: 2
+updates:
+  # Keeps the org submodule, which holds the logos and icons, on the latest .github commit.
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: daily

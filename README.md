@@ -5,11 +5,14 @@
 Source for <https://x-tech-laboratories.github.io>, the home page of the X-Tech Laboratories community.
 
 Built with [Astro Starlight](https://starlight.astro.build). Pages are MDX files in
-`src/content/docs/`, and the sidebar is set in `astro.config.mjs`.
+`src/content/docs/`, and the sidebar is set in `astro.config.mjs`. The logo, hero image and favicon come from
+the `branding/` folder of the [organisation's `.github` repository](https://github.com/x-tech-laboratories/.github), checked out as
+the `org/` submodule; Dependabot opens a pull request when it changes.
 
 ## Develop
 
 ```sh
+git submodule update --init   # the org/ folder: logos and icons from x-tech-laboratories/.github
 npm install
 npm run dev     # live preview at http://localhost:4321
 npm run build   # static site in dist/, with the search index

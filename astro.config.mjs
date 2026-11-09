@@ -9,7 +9,7 @@ export default defineConfig({
 			title: 'X-Tech Laboratories',
 			description:
 				'An open source community for extensible, interoperable software, consolidated projects, automated development and AI used in the open.',
-			logo: { src: './src/assets/logo.svg', alt: 'X-Tech Laboratories', replacesTitle: true },
+			logo: { src: './org/branding/logo/x-tech-laboratories.svg', alt: 'X-Tech Laboratories', replacesTitle: true },
 			favicon: '/favicon.svg',
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/x-tech-laboratories' },

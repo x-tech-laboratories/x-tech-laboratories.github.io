@@ -1,0 +1,4 @@
+[submodule "org"]
+	path = org
+	url = https://github.com/x-tech-laboratories/.github.git
+	branch = main
