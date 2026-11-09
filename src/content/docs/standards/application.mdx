@@ -1,0 +1,267 @@
+---
+title: Application Standard
+sidebar:
+  order: 1
+---
+
+How X-Tech applications are built. Every app follows it where possible, so the shared code in X-Libs and the shared styling in Halon serve all of them.
+
+## Purpose and scope
+
+* Every X-Tech app is written in TypeScript on Node with React.
+* One widget set, one agent and server stack and one toolchain are shared across apps. This is what lets X-Libs be used in full.
+* The standard covers new apps and rewrites. An existing app moves over in the order given under Current state.
+* Exceptions stay as they are until they are rewritten:
+  * a Python app with no UI of its own (a daemon, an experiment, a training pipeline);
+  * a LightDM greeter or other component whose host fixes its language (web-greeter);
+  * a library or tool with no UI and no server (RoboBuddy, ai-readiness) still follows the toolchain and code conventions, and nothing else.
+* A reason to deviate is a hard platform limit: the host only runs another language, a required library exists only for another language, or the app must run where Node cannot. Taste, familiarity and a smaller bundle are not reasons.
+* A deviation is written down in the app's `README.md` with the limit that forces it.
+
+## Stack per target
+
+| Target          | Stack                                                                                  |
+| --------------- | -------------------------------------------------------------------------------------- |
+| Web app         | React page bundled by Vite, served by a Fastify server                                 |
+| Desktop app     | Electron built with electron-vite, wrapping the same React UI                          |
+| Mobile app      | React Native                                                                           |
+| CLI and agent   | Node script in TypeScript, built on the X-Libs `agent` modules                         |
+
+Versions floor:
+
+* Node 24 or newer; `"engines": { "node": ">=24" }` in `package.json`.
+* TypeScript 7 or newer, strict.
+* React 19 or newer.
+* Vite 8 or newer.
+* Fastify 5 or newer, with `@fastify/cookie`, `@fastify/session`, `@fastify/rate-limit`, `@fastify/static` and `@fastify/websocket` as the app needs them.
+* Electron and electron-vite at the current major.
+* React Native at the current stable release.
+* `oxlint` for linting, `vitest` for tests.
+
+Rules per target:
+
+* A web app and a desktop app share one `src/web` React tree. The desktop app loads it in the renderer and reaches the main process through a preload bridge.
+* A desktop app that also ships as a web app runs the same Fastify server, either in the main process or as the web build.
+* A mobile app reuses the shared logic, `src/shared` and the X-Libs modules that do not touch the DOM. Its screens use React Native components, themed from the Halon tokens.
+* The server owns the app's storage, a JSON store or SQLite as the data needs; the page and the agent reach it only through the server.
+* A server or an agent never shells out when a Node API does the job.
+
+## Shared code
+
+Code that two apps need lives in `@x-tech-laboratories/x-libs` (repo X-Libs). Styling lives in `@x-tech-laboratories/halon` (repo X-Themes). An app imports it and does not write its own copy.
+
+Comes from X-Libs:
+
+* Agents and long runs: `agent/*` and `server/agents/*` (`AgentHub`, `LongRuns`, `TaskRunner`, the key login and the protocol).
+* Passwords and login: `server/passwords`, `server/hash_password`, and `agent/keys` for agent keys.
+* Durations, sizes, times and formatting: `durations` and `web/format`. They wrap `parse-duration`, `Intl` and `pretty-bytes`; an app does not parse or format these itself.
+* The web shell and widgets: `Shell`, layout, badges, controls, tables, toasts, dialogs, menus, split panes and the `use_resource` states.
+* The hash router and the theme choice: `web/router` and `web/theme`.
+
+Comes from Halon:
+
+* The tokens (`halon-tokens.css`) and the widget stylesheets (`halon.css`). An app imports them once and does not restyle a widget.
+
+Adding to X-Libs:
+
+* Porting an app runs both ways: a port also pulls into X-Libs every feature the app has that X-Libs lacks and another app could use, so all the apps gain it.
+* Code that a second app needs moves into X-Libs, in a branch of X-Libs, and the app then imports it. The app does not keep a fork or a patched copy.
+* A module is one file per concern under a subpath: `server/...`, `agent/...`, `web/...`, `<name>.ts` at the top for plain helpers.
+* A module imports nothing from an app.
+* A widget has a test beside its behaviour and a short entry in the X-Libs README table.
+* A widget that needs a style gets it in Halon first.
+
+Widgets and external libraries:
+
+* Every UI feature that two apps need lives in X-Libs.
+* X-Libs either writes the feature or wraps an external library.
+* An external library is chosen only when it matches or exceeds the in-house behaviour feature by feature.
+* The library is wrapped inside X-Libs. An app never imports it directly.
+* X-Libs adds only its own improvements and the parts the library lacks on top: Halon markup, accessibility, phone layout and keyboard paths.
+* The comparison that justified the choice is written in the X-Libs README row or the module header.
+* Current choices:
+  * `@tanstack/react-table` (headless) holds the table state inside the X-Libs `DataTable`.
+  * Shortcuts, menus, trees, dates, the Electron bridge and the window helpers are in-house.
+  * Rejected: tinykeys and hotkeys-js, electron-window-state, dnd-kit and pragmatic-drag-and-drop for now, and CRDT libraries.
+
+Versioning:
+
+* X-Libs and Halon use semver. A breaking change raises the major version and states what to change in the commit message.
+* `react`, `react-dom`, `fastify` and `@fastify/websocket` are `peerDependencies` of X-Libs, marked optional in `peerDependenciesMeta`, so a CLI or an agent installs neither.
+* An app depends on a caret range of X-Libs and Halon and installs its own single copy of React and Fastify.
+
+## Repository layout and scripts
+
+Reference layout (X-Backups):
+
+```
+src/
+  server/    Fastify app, config, stores, schedulers, main.ts
+  web/       React page: index.html, main.tsx, views/, app.css
+  agent/     the agent that runs on managed hosts: main.ts
+  shared/    types and protocol used by more than one of the above
+tests/       one *.test.ts per behaviour, mirroring src/
+docs/        written documentation
+.github/workflows/ci.yml
+.oxlintrc.json  (optional)
+nix/         package.nix, module.nix, agent-module.nix
+flake.nix
+shell.nix
+config.example.json
+tsconfig.json  tsconfig.server.json  tsconfig.web.json
+vite.config.ts
+```
+
+* A desktop app adds `src/main` and `src/preload` and builds with `electron.vite.config.ts`. A mobile app adds `src/native` for its screens. A target the app does not have gets no folder.
+* `tsconfig.json` holds `references` only. Each target has its own `tsconfig.<target>.json`: `server` and `agent` use the Node types; `web` uses `jsx: react-jsx`, the `DOM` lib and `vite/client`.
+* `config.example.json` is the complete, working default config. `dev:server` runs against it.
+* `nix/` holds the package and the NixOS modules. `flake.nix` exposes the package, the modules and a dev shell. `shell.nix` serves `nix-shell`.
+* `docs/` holds anything longer than the README.
+
+Script names, the same in every app:
+
+| Script        | Does                                                       |
+| ------------- | ---------------------------------------------------------- |
+| `dev:server`  | `node --watch src/server/main.ts` against the example config |
+| `dev:web`     | `vite`                                                     |
+| `dev`         | `electron-vite dev` (desktop apps)                         |
+| `build`       | `tsc -b && vite build`                                     |
+| `start`       | `NODE_ENV=production node src/server/main.ts`              |
+| `typecheck`   | `tsc -b --noEmit` or per target (optional)                 |
+| `test`        | `vitest run`                                               |
+| `lint`        | `oxlint`                                                   |
+
+An app adds its own commands (`hash-password`, `seed`) beside these and does not rename them.
+
+## Code conventions
+
+* TypeScript strict, ESM only. `package.json` has no `"type": "commonjs"`.
+* The shared base is `X-Libs/tsconfig.base.json`: `strict`, `allowImportingTsExtensions`, `verbatimModuleSyntax`, `erasableSyntaxOnly`, `moduleDetection: force`, and the unused-code and fallthrough checks. An app's configs set the same flags.
+* Relative imports end in `.ts` or `.tsx`. Node runs the server's `.ts` files directly; the build rewrites the extensions for packages.
+* `erasableSyntaxOnly` rules out `enum`, `namespace` and constructor parameter properties. Use unions, objects and plain fields.
+* Type-only imports use `import type`.
+* Names are snake_case: functions, variables, files. Types and React components are PascalCase.
+* Comments are one plain line. A comment says what the code does not.
+* Widgets are named exports. There are no default exports of widgets or components.
+* No class hierarchies for UI. Components are functions; shared state is a hook or a small module.
+* Tests live in `tests/` and are named for the behaviour they cover: `tests/scheduler.test.ts` for `src/server/scheduler.ts`. A change to behaviour changes a test in the same commit.
+* Secrets never sit in the repo, in config examples or in logs. A config names a file that holds the secret.
+* Licence: GPL-3.0-or-later in `package.json` and in `LICENSE`.
+* Commits use Conventional Commits (`feat(web): ...`, `fix(agent): ...`, `refactor: ...`). A breaking change uses `!`. A commit made with a tool's help carries an `Assisted-by` trailer naming it.
+* The dev environment is the Nix flake or shell. `nix-shell` gives Node and the tools the tests need.
+
+## Testing and linting
+
+* `vitest` is the test runner in every repo. `npm test` is `vitest run`.
+* Tests live in `tests/` and are named for the behaviour: `tests/scheduler.test.ts`. A rendered component test is `tests/<widget>.test.tsx`.
+* A rendered test starts with `// @vitest-environment jsdom` and uses `@testing-library/react` (`render`, `screen`, `fireEvent` or `user-event`). Queries go by role and text, never by class.
+* Node code is tested without a DOM.
+* Tests fix dates and clocks (`vi.useFakeTimers` or an explicit `now` argument), use no network, and keep files in temp dirs.
+* Characterization tests come before a port or an extraction: pin the current behaviour of the module being moved, move it, then run the same tests against the new home.
+
+What to test:
+
+* Every exported function with a rule in it.
+* Every widget's keyboard path and accessibility roles.
+* Every wire message shape.
+* Not tested: markup snapshots and styling.
+
+Linting and types:
+
+* `oxlint` is the linter in every repo. `npm run lint` is `oxlint`.
+* A clean lint is a condition for landing.
+* A rule override goes in `.oxlintrc.json` with a one-line reason each.
+* `tsc -b` (or the repo's `typecheck` script) is part of `build` and runs in CI.
+
+Where it runs:
+
+* Local runs cover only the files changed. CI runs the whole suite.
+* CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main` and on pull requests: Node 24, `npm ci`, `npm run build`, `npm test`, `npm run lint`. X-Libs carries it:
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm run lint
+```
+
+Dev dependencies every repo carries for this:
+
+* `vitest`, `oxlint` and `typescript`.
+* For repos with widgets, also `jsdom`, `@testing-library/react` and `@testing-library/dom`.
+
+## Styling and branding
+
+* Pages draw their look from Halon: `halon-tokens.css` for colours, spacing and type, `halon.css` for the widget styles. An app's own `app.css` holds layout only and uses the tokens, never raw colours.
+* Light and dark themes come from the tokens and the `web/theme` choice. An app does not ship its own theme switch.
+* Colours are the [Design Guidelines](/standards/design) scheme: Baby Blue `#0088ff` and white. Fonts are Rajdhani for headings and Noto Sans for text.
+* Names follow the [Design Guidelines](/standards/design) naming scheme: `X-` and a hyphen, then a descriptive word (X-Backups, X-Nix). Where a hyphen is not allowed (package names, identifiers), the name is camel case (`XBackups`) or lower case with the hyphen kept (`x-backups`), as the platform allows.
+* Icons and logos come from the `icon` and `logo` folders in the [branding folder](https://github.com/x-tech-laboratories/.github/tree/main/branding) of the organisation's `.github` repository. A mobile or desktop icon is exported from those files and not redrawn.
+
+## Current state and migration order
+
+Each app as it is today.
+
+| App | Stack today | Target | Gap |
+| --- | --- | --- | --- |
+| X-Backups | TypeScript, Fastify 5 on X-Libs' server modules, Vite 8, React 19, on X-Libs 0.11 and Halon 0.5, released as 0.3.0 | web (Fastify + React) and agent | none |
+| X-Nix | TypeScript, Fastify 5 on X-Libs' server modules, Vite 8, React 19, on X-Libs 0.11 and Halon 0.5, released as 0.3.0 | web (Fastify + React) and agent | none |
+| X-Tasks | TypeScript 7, Vite 8, React 19 in `src/web` on X-Libs 0.11 and Halon 0.5, Fastify 5 server on X-Libs' server modules, Electron on the X-Libs window and bridge, Capacitor for Android, vitest and oxlint, released as 0.2.1 | desktop (Electron), web, mobile (React Native) | `dev:server`/`dev:web` scripts; `.ts` import extensions; Capacitor to React Native later |
+| X-Music | TypeScript 7, React 19 on X-Libs 0.11 and Halon 0.5, Electron 43 on the X-Libs window and bridge, better-sqlite3, oxlint, released as 0.1.2 | desktop (Electron) | none |
+| X-Stream | TypeScript 7, React 19 on X-Libs 0.11 and Halon 0.5, Electron on the X-Libs window, bridge, main-process fetch and streaming fetch, GPL-3.0-or-later, released as 0.2.1 | desktop (Electron) | none |
+| CODEX | TypeScript 7, electron-vite, React 19 on X-Libs 0.11 and Halon 0.5, X-Libs bridge envelopes, node-llama-cpp, vitest and oxlint, CI, released as 0.2.1 | desktop (Electron), agent | core/daemon files still camelCase; Electron tray, autostart and sidecar helpers to move into X-Libs |
+| RoboBuddy | TypeScript library, `tsc` and `build.mjs`, no runtime deps | library | oxlint; otherwise in line |
+| ai-readiness | JavaScript with Node's test runner, Prettier, Node 20, MIT | CLI | TypeScript; Node 24; oxlint and vitest; GPL-3.0-or-later |
+| X-Libs | TypeScript library, ESM, React widgets, Fastify server modules (token sign-in, sign-in guard, event stream, web folder, replies, config, CORS); shortcuts, dates, trees, prefs, selection, virtual windows, logging, backups, media tiles, list picker, page view, progress, rating, volume, following output, Markdown, suggestions, status pill, path input, stores; Electron app, bridge with envelopes, events, fetch and streaming fetch, window helpers; table on TanStack with virtualization | library | facet pane, entity merge grid, name-and-password sign-in, forge webhook verification, Electron tray/autostart/sidecar, number field, yes/no-with-note dialog, empty-label table column id fallback |
+| X-Themes (Halon) | stylesheets and tokens | stylesheets | none |
+| X-Monitor | Python 3.9+, NiceGUI, peewee, asyncssh | web (Fastify + React) and agent | rewrite in TypeScript; its agent becomes an X-Libs agent |
+| MOSAIC | Python experiment (LoRA training, router) | stays Python | exception: no UI; the ML libraries are Python only |
+| web-greeter | Python 3.13, PySide6, LightDM | stays Python | exception: host fixes the language |
+
+Order:
+
+1. X-Libs: the web widgets are React, so React, Electron and React Native apps use one library (done).
+2. X-Backups and X-Nix: Preact to React on the X-Libs React widgets (done).
+3. X-Tasks housekeeping: tests and lint (done).
+4. X-Tasks and X-Music: Preact to React on X-Libs' widgets, their generic features pulled into X-Libs (done).
+5. X-Stream: Tauri to Electron, then its pages onto X-Libs' widgets and Halon (done).
+6. CODEX: renderer to React (done).
+7. The Python apps, as each is rewritten. An app in an exception stays as it is.
+
+Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, missing GPL header) are fixed when the app is next touched.
+
+## Checklist for a new app
+
+* [ ] Name follows the [Design Guidelines](/standards/design) (`X-<Word>`).
+* [ ] Repo has `LICENSE` (GPL-3.0-or-later), `README.md`, `flake.nix`, `shell.nix`.
+* [ ] `package.json`: `"engines": { "node": ">=24" }`, `"license": "GPL-3.0-or-later"`, ESM.
+* [ ] Layout is `src/server|web|agent|shared` (or `src/main|preload|web` for desktop), plus `tests/`, `docs/`, `nix/`.
+* [ ] `tsconfig.json` references one config per target, each with the strict flags from `tsconfig.base.json`.
+* [ ] Scripts `dev:server`, `dev:web`, `build`, `start`, `test`, `lint` exist and use the standard commands.
+* [ ] `config.example.json` runs the app as it stands.
+* [ ] Depends on `@x-tech-laboratories/x-libs` and `@x-tech-laboratories/halon`; no re-implemented login, agent, formatting, widget or theme code.
+* [ ] Imports Halon's tokens and stylesheet once; `app.css` holds layout only.
+* [ ] Login uses `server/passwords`; agents use the X-Libs agent modules.
+* [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
+* [ ] A CI workflow exists (`.github/workflows/ci.yml`).
+* [ ] A rendered test exists for each widget the app adds.
+* [ ] No app-level copy of an X-Libs widget.
+* [ ] Commits are Conventional Commits.
+* [ ] Any deviation from this document is written in the README with its reason.
