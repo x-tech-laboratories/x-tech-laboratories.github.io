@@ -3,3 +3,4 @@ src/data/readiness.json
 dist/
 .astro/
 flake.lock
+org/
