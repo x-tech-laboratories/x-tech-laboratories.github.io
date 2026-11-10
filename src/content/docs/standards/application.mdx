@@ -63,6 +63,35 @@ Other programs reach an app's data as well as its own page does, so it can be sc
 * What the API returns leaves out keys and passwords for other services.
 * An app without a server, such as a desktop-only app, offers MCP where its host allows, or writes down in its `README.md` why it cannot.
 
+## Sync, backups and history
+
+An app's data is kept the same way in every app, so users get the same safety everywhere and X-Libs holds one copy of the code. The modules are named in the [X-Libs README](https://github.com/x-tech-laboratories/X-Libs#readme).
+
+Sync:
+
+* An app whose data lives on more than one device, such as a desktop or phone app with its own copy and a server, syncs through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the server and `create_sync_client` on each device. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
+* The newest write of each value wins. The first time a device connects, the user chooses which copy wins, and the other is backed up before it is replaced.
+* A device keeps the server's address and token through `sync_file_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
+* The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync". A browser shows no sync section, since it is already on the server.
+
+Backups:
+
+* Every app that keeps data of its own backs it up: an SQLite store through `sqlite_backups`, any other store through `backups` with a store of its own. Backups are named by `backup_naming` after the time they were taken.
+* Daily backups are on by default and keep the last 14 (`default_backup_schedule`). `keep_backing_up` takes them while the app runs. Backups made by hand are always kept. The schedule is a setting of the device, never synced.
+* A backup is taken before anything replaces the data: a restore, a sync that takes the server's copy, a replace of the server's data, and a schema upgrade.
+* A restore backs up the current data first, so it can itself be undone. After a restore, sync forgets its history (`after_restore: engine.forget_history`), and the user chooses again which copy wins.
+* Where backups go: beside the database in the desktop app's profile folder, in a folder the user picks on a phone, and in the data folder of a server. The settings page shows `BackupSettings` under a section called "Backups", through the `BackupMethods` calls.
+
+History:
+
+* An app whose users make and edit items, such as tasks, transactions or workouts, keeps a history of them through `create_history`. Every change to an item is a version; any version can be restored, and a deleted item can be brought back with what was deleted along with it.
+* The history watches every table that changes an item, the item's tags and links included. `record` runs after every write, however the write was made, the API and MCP included.
+* The versions table syncs like any other (`history.synced_table`), and `history.forget_touched` is the sync engine's `after_apply`, so each version is recorded once, by the device that made it.
+* Versions older than a set number of days are pruned, keeping each item's newest. The number of days is a setting.
+* The page shows an item's history from the item itself, and the latest changes to every item on a page of their own, through the `history_methods` calls.
+
+Where these do not fit, such as an app whose data is a cache of files or of another service, or a log that is never edited, the app's `README.md` says which it leaves out and why.
+
 ## Shared code
 
 Code that two apps need lives in `@x-tech-laboratories/x-libs` (repo X-Libs). Styling lives in `@x-tech-laboratories/halon` (repo X-Themes). An app imports it and does not write its own copy.
@@ -231,7 +260,8 @@ Dev dependencies every repo carries for this:
 * Light and dark themes come from the tokens and the `web/theme` choice. An app does not ship its own theme switch.
 * Colours are the [Design Guidelines](/standards/design) scheme: Baby Blue `#0088ff` and white. Fonts are Rajdhani for headings and Noto Sans for text.
 * Names follow the [Design Guidelines](/standards/design) naming scheme: `X-` and a hyphen, then a descriptive word (X-Backups, X-Nix). Where a hyphen is not allowed (package names, identifiers), the name is camel case (`XBackups`) or lower case with the hyphen kept (`x-backups`), as the platform allows.
-* Icons and logos come from the `icon` and `logo` folders in the [branding folder](https://github.com/x-tech-laboratories/.github/tree/main/branding) of the organisation's `.github` repository. A mobile or desktop icon is exported from those files and not redrawn.
+* Logos come from the `logo` folder in the [branding folder](https://github.com/x-tech-laboratories/.github/tree/main/branding) of the organisation's `.github` repository.
+* Every app has its own icon in the X-Tech style, as the [Design Guidelines](/standards/design#app-icons) set out: a glyph cut out of the X-Tech hexagon, drawn once as `resources/icon.svg`, with the desktop, Android and web icons generated from it.
 
 ## Current state and migration order
 
@@ -239,11 +269,13 @@ Each app as it is today.
 
 | App | Stack today | Target | Gap |
 | --- | --- | --- | --- |
-| X-Backups | TypeScript, Fastify 5 on X-Libs' server modules, Vite 8, React 19, on X-Libs 0.11 and Halon 0.5, released as 0.3.0 | web (Fastify + React) and agent | none |
+| X-Backups | TypeScript, Fastify 5 on X-Libs' server modules, Vite 8, React 19, on X-Libs 0.11 and Halon 0.5, released as 0.3.0 | web (Fastify + React) and agent | X-Tech app icon |
 | X-Nix | TypeScript, Fastify 5 on X-Libs' server modules, Vite 8, React 19, on X-Libs 0.11 and Halon 0.5, released as 0.3.0 | web (Fastify + React) and agent | none |
-| X-Tasks | TypeScript 7, Vite 8, React 19 in `src/web` on X-Libs 0.11 and Halon 0.5, Fastify 5 server on X-Libs' server modules, Electron on the X-Libs window and bridge, Capacitor for Android, vitest and oxlint, released as 0.2.1 | desktop (Electron), web, mobile (Capacitor) | `dev:server`/`dev:web` scripts; `.ts` import extensions |
-| X-Music | TypeScript 7, React 19 on X-Libs 0.11 and Halon 0.5, Electron 43 on the X-Libs window and bridge, better-sqlite3, oxlint, released as 0.1.2 | desktop (Electron) | none |
-| X-Stream | TypeScript 7, React 19 on X-Libs 0.11 and Halon 0.5, Electron on the X-Libs window, bridge, main-process fetch and streaming fetch, GPL-3.0-or-later, released as 0.2.1 | desktop (Electron) | none |
+| X-Tasks | TypeScript 7, Vite 8, React 19 in `src/web` on X-Libs 0.11 and Halon 0.5, Fastify 5 server on X-Libs' server modules, Electron on the X-Libs window and bridge, Capacitor for Android, vitest and oxlint, released as 0.2.1 | desktop (Electron), web, mobile (Capacitor) | `dev:server`/`dev:web` scripts; `.ts` import extensions; its own sync, backups and task history onto the X-Libs sync, `sqlite_backups` and `history` modules |
+| X-Music | TypeScript 7, React 19 on X-Libs 0.11 and Halon 0.5, Electron 43 on the X-Libs window and bridge, better-sqlite3, oxlint, released as 0.1.2 | desktop (Electron) | X-Tech app icon; backups of its library database |
+| X-Stream | TypeScript 7, React 19 on X-Libs 0.11 and Halon 0.5, Electron on the X-Libs window, bridge, main-process fetch and streaming fetch, GPL-3.0-or-later, released as 0.2.1 | desktop (Electron) | X-Tech app icon (it ships a non-X-Tech one) |
+| X-Budget | TypeScript, React 19 on X-Libs 0.29 and Halon 0.12, Electron, Capacitor for Android, Fastify server, X-Libs sync, vitest and oxlint, at 0.1.0 | desktop (Electron), web, mobile (Capacitor) | X-Tech app icon (it ships Capacitor's); the X-Libs sync storage, device calls and `SyncSettings` in place of its own copies; `sqlite_backups` and `BackupSettings`; history |
+| X-Fitness | TypeScript, React 19 on X-Libs 0.28 and Halon 0.12, Electron, Capacitor for Android, Fastify server, X-Libs sync, vitest and oxlint, at 0.1.0 | desktop (Electron), web, mobile (Capacitor) | X-Tech app icon (it ships Capacitor's); the X-Libs sync storage, device calls and `SyncSettings` in place of its own copies; `sqlite_backups` and `BackupSettings`; history |
 | CODEX | TypeScript 7, electron-vite, React 19 on X-Libs 0.11 and Halon 0.5, X-Libs bridge envelopes, node-llama-cpp, vitest and oxlint, CI, released as 0.2.1 | desktop (Electron), agent | core/daemon files still camelCase; Electron tray, autostart and sidecar helpers to move into X-Libs |
 | RoboBuddy | TypeScript library, `tsc` and `build.mjs`, no runtime deps | library | oxlint; otherwise in line |
 | ai-readiness | JavaScript with Node's test runner, Prettier, Node 20, MIT | CLI | TypeScript; Node 24; oxlint and vitest; GPL-3.0-or-later |
@@ -268,6 +300,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 ## Checklist for a new app
 
 * [ ] Name follows the [Design Guidelines](/standards/design) (`X-<Word>`).
+* [ ] `resources/icon.svg` is an X-Tech style icon, and the desktop, Android and web icons are generated from it.
 * [ ] Repo has `LICENSE` (GPL-3.0-or-later), `README.md`, `flake.nix`, `shell.nix`.
 * [ ] `package.json`: `"engines": { "node": ">=24" }`, `"license": "GPL-3.0-or-later"`, ESM.
 * [ ] Layout is `src/server|web|agent|shared` (or `src/main|preload|web` for desktop), plus `tests/`, `docs/`, `nix/`.
@@ -278,6 +311,9 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Imports Halon's tokens and stylesheet once; `app.css` holds layout only.
 * [ ] Login uses `server/passwords`; agents use the X-Libs agent modules.
 * [ ] Every call has an `api_spec` entry, and the server offers `/api/openapi.json` and `/api/mcp`.
+* [ ] Data on more than one device syncs through the X-Libs sync modules.
+* [ ] Data is backed up daily through the X-Libs backups, before every replace, with a Backups section in settings.
+* [ ] Items users edit keep a history through `create_history`.
 * [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
 * [ ] A CI workflow exists (`.github/workflows/ci.yml`).
 * [ ] A rendered test exists for each widget the app adds.
