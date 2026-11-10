@@ -45,7 +45,8 @@ Rules per target:
 * A desktop app that also ships as a web app runs the same Fastify server, either in the main process or as the web build.
 * A mobile app loads the built `src/web` page in Capacitor and reaches the server over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-Libs when a second app needs them.
 * A page works at phone width, through the X-Libs `Shell` and the widgets' phone layouts.
-* The server owns the app's storage, a JSON store or SQLite as the data needs; the page and the agent reach it only through the server.
+* The server owns the app's storage, a JSON store or SQLite as the data needs; the browser page and the agent reach it only through the server.
+* A desktop or mobile app that must work offline keeps its own SQLite copy and syncs it with the server through the X-Libs sync modules; its page reaches that copy only through the app's bridge.
 * A server or an agent never shells out when a Node API does the job.
 
 ## APIs and MCP
@@ -71,6 +72,7 @@ Comes from X-Libs:
 
 * Agents and long runs: `agent/*` and `server/agents/*` (`AgentHub`, `LongRuns`, `TaskRunner`, the key login and the protocol).
 * Passwords and login: `server/passwords`, `server/hash_password`, and `agent/keys` for agent keys.
+* SQLite and sync: `sql` (the connection type, transactions and per-owner migrations), `drizzle` for typed queries, and `sync_engine`, `sync_client` and `server/sync_routes` for keeping devices alike.
 * Durations, sizes, times and formatting: `durations` and `web/format`. They wrap `parse-duration`, `Intl` and `pretty-bytes`; an app does not parse or format these itself.
 * The web shell and widgets: `Shell`, layout, badges, controls, tables, toasts, dialogs, menus, split panes and the `use_resource` states.
 * The hash router and the theme choice: `web/router` and `web/theme`.
@@ -99,6 +101,7 @@ Widgets and external libraries:
 * The comparison that justified the choice is written in the X-Libs README row or the module header.
 * Current choices:
   * `@tanstack/react-table` (headless) holds the table state inside the X-Libs `DataTable`.
+  * Drizzle ORM (pinned to 1.0.0-rc.5 until 1.0 is stable) types SQLite queries and writes migrations inside the X-Libs `drizzle` module; an app writes its schema with the builders X-Libs re-exports and never imports `drizzle-orm`.
   * Shortcuts, menus, trees, dates, the Electron bridge and the window helpers are in-house.
   * Rejected: tinykeys and hotkeys-js, electron-window-state, dnd-kit and pragmatic-drag-and-drop for now, and CRDT libraries.
 
