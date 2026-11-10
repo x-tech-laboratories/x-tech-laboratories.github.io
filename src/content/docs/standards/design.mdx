@@ -24,6 +24,16 @@ Both are free under the SIL Open Font License.
 | Sky blue  | `#00acff` | The icon pack.                       |
 | White     | `#ffffff` | Backgrounds and the X in the icon.   |
 
+## App icons
+
+Every X-Tech app has its own icon, drawn in the X-Tech style. No app ships the default icon of a template or toolkit (Electron, Capacitor, Vite) or an icon from another project.
+
+- The icon is the X-Tech hexagon, flat top and bottom, in Baby Blue `#0088ff`, with a glyph for what the app does cut out of it, so the background shows through: a tick for X-Tasks, a robot head for CODEX, the Nix snowflake for X-Nix.
+- The glyph is one plain, solid shape, centred, at the same margin and line weight as the other app icons. No text, no gradients, no shadows and no other colours.
+- The source is an SVG with a `viewBox` of `0 0 64 64`, the hexagon `M63 32 47.5 58.847 16.5 58.847 1 32 16.5 5.153 47.5 5.153Z`, and a `<title>` with the app's name. Where it can, the cut-out goes into the same path with `fill-rule="evenodd"`, so Android's vector icons can draw it too.
+- The SVG lives at `resources/icon.svg` in the app's repo. Every other size is generated from it, never drawn again by hand: the desktop icon (`resources/icon.png`, 512 by 512), the Android launcher icons, and the web page's favicon.
+- A new app's icon is drawn when the app is made. An app without one gets one the next time it is touched.
+
 ## Naming scheme
 
 - Every X-Tech item begins with an `X` and a hyphen, followed by a descriptive word for the entity (X-Notes, X-Apps, X-Security).
