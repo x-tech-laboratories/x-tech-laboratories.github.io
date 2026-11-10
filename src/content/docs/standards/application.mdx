@@ -53,7 +53,7 @@ Rules per target:
 
 Other programs reach an app's data as well as its own page does, so it can be scripted, linked to other tools and used by an AI client. Wherever an app has a server:
 
-* Every call the page makes is open to other programs through the server's API, behind the same sign-in. A program sends the server's secret as a bearer header.
+* Every call the page makes is open to other programs through the server's API, behind the same sign-in. A program sends a token made on the user's account page as a bearer header.
 * Every call is described once in an X-Libs `api_spec`: what it does in plain words, and a JSON Schema for each argument. The spec is typed against the app's method table, so a call without one fails to compile.
 * The server serves the same calls three ways from that one spec:
   * the app's own API, which takes the arguments as a list in order or by name as a JSON object;
@@ -64,6 +64,37 @@ Other programs reach an app's data as well as its own page does, so it can be sc
 * What the API returns leaves out keys and passwords for other services.
 * An app without a server, such as a desktop-only app, offers MCP where its host allows, or writes down in its `README.md` why it cannot.
 
+## Accounts and signing in
+
+Every app whose users sign in does it the same way, so a user meets one sign-in page, one account page and one set of words in every app. The modules are `server/account_store` and `server/account_sign_in` on the server, and `web/accounts`, `web/react/sign_in` and `web/react/accounts` on the page.
+
+Who signs in:
+
+* Users have a name and password. The users in the accounts file (`<APP>_PASSWORD_HASH_FILE`, one `name:hash` line each, written by `npm run hash-password`) are admins, and the page cannot change their role or password. Admins add every other user on the Users page.
+* Users, sessions and tokens are kept in the app's own SQLite database, so a restart signs no one out.
+* Roles are the app's own, ordered from least to most able, with the last role managing users. An app that grants more than everything or nothing gives its own access rules and an editor for them.
+* Single sign-on through an OpenID Connect provider (`<APP>_OIDC_*`) and a trusted reverse proxy's user header are optional. Both sign in only users an admin has added.
+* An app does not use one shared secret for browsers or devices.
+
+The sign-in page:
+
+* `SignInForm` asks for the user name and password. Once the password is right, and only if the user has turned on a second factor, it asks for the code from an authenticator app or a recovery code.
+* A "Keep me signed in" box is unticked by default. Unticked, the session ends when the browser closes; ticked, it lasts until the user or an admin signs it out, or the cookie is cleared. The server can bound both lengths (`session_seconds`, `remembered_seconds`).
+* After five wrong tries from one address for one name, that pair waits a few minutes.
+
+Words: the app says "Sign in" and "Sign out", never "Log in" or "Log out", and "Keep me signed in". Refusals read "Wrong name or password." and "Too many tries; wait a few minutes."
+
+Account pages:
+
+* The top bar shows the signed-in user's name, linked to Your account, and a Sign out button.
+* Your account (`AccountView`) lets each user change their password, turn the second factor on or off, see where they are signed in and sign any of those out, and make and revoke tokens.
+* Users (`UsersView`), shown only to admins, adds, edits and removes users, resets a second factor and signs a user out everywhere. Changing a user's role, access or password signs them out everywhere.
+
+Devices and programs:
+
+* A desktop or phone app that syncs signs in from `SyncSettings` with the same name and password, and gets a token of its own, named for the device. Stop syncing gives the token back.
+* A program uses a token made on Your account, read-only unless the user unticks that, sent as `Authorization: Bearer <token>`. A token cannot change the account it belongs to.
+
 ## Sync, backups and history
 
 An app's data is kept the same way in every app, so users get the same safety everywhere and X-Libs holds one copy of the code. The modules are named in the [X-Libs README](https://github.com/x-tech-laboratories/X-Libs#readme).
@@ -73,7 +104,7 @@ Sync:
 * An app whose data lives on more than one device, such as a desktop or phone app with its own copy and a server, syncs through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the server and `create_sync_client` on each device. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
 * The newest write of each value wins. The first time a device connects, the user chooses which copy wins, and the other is backed up before it is replaced.
 * A device keeps the server's address and token through `file_sync_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
-* The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync". A browser shows no sync section, since it is already on the server.
+* The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync", where the device signs in with the user's name and password and asks before one copy replaces the other. A browser shows no sync section, since it is already on the server.
 
 Backups:
 
@@ -100,7 +131,7 @@ Code that two apps need lives in `@x-tech-laboratories/x-libs` (repo X-Libs). St
 Comes from X-Libs:
 
 * Agents and long runs: `agent/*` and `server/agents/*` (`AgentHub`, `LongRuns`, `TaskRunner`, the key login and the protocol).
-* Passwords and login: `server/passwords`, `server/hash_password`, and `agent/keys` for agent keys.
+* Accounts and signing in: `server/account_store`, `server/account_sign_in`, `server/passwords`, `server/hash_password`, `server/totp`, `server/oidc`, and on the page `web/accounts`, `web/react/sign_in` and `web/react/accounts`; `agent/keys` for agent keys.
 * SQLite and sync: `sql` (the connection type, transactions and per-owner migrations), `drizzle` for typed queries, and `sync_engine`, `sync_client` and `server/sync_routes` for keeping devices alike.
 * Durations, sizes, times and formatting: `durations` and `web/format`. They wrap `parse-duration`, `Intl` and `pretty-bytes`; an app does not parse or format these itself.
 * The web shell and widgets: `Shell`, layout, badges, controls, tables, toasts, dialogs, menus, split panes and the `use_resource` states.
@@ -310,9 +341,9 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] `tsconfig.json` references one config per target, each with the strict flags from `tsconfig.base.json`.
 * [ ] Scripts `dev:server`, `dev:web`, `build`, `start`, `test`, `lint` exist and use the standard commands.
 * [ ] `config.example.json` runs the app as it stands.
-* [ ] Depends on `@x-tech-laboratories/x-libs` and `@x-tech-laboratories/halon`; no re-implemented login, agent, formatting, widget or theme code.
+* [ ] Depends on `@x-tech-laboratories/x-libs` and `@x-tech-laboratories/halon`; no re-implemented sign-in, agent, formatting, widget or theme code.
 * [ ] Imports Halon's tokens and stylesheet once; `app.css` holds layout only.
-* [ ] Login uses `server/passwords`; agents use the X-Libs agent modules.
+* [ ] Signing in uses the X-Libs accounts (`register_accounts`, `SignInForm`, `AccountView`, `UsersView`) and says "Sign in" and "Sign out"; agents use the X-Libs agent modules.
 * [ ] Every call has an `api_spec` entry, and the server offers `/api/openapi.json` and `/api/mcp`.
 * [ ] Data on more than one device syncs through the X-Libs sync modules.
 * [ ] Data is backed up daily through the X-Libs backups, before every replace, with a Backups section in settings.
