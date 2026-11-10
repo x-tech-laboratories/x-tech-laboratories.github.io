@@ -71,7 +71,7 @@ Sync:
 
 * An app whose data lives on more than one device, such as a desktop or phone app with its own copy and a server, syncs through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the server and `create_sync_client` on each device. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
 * The newest write of each value wins. The first time a device connects, the user chooses which copy wins, and the other is backed up before it is replaced.
-* A device keeps the server's address and token through `sync_file_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
+* A device keeps the server's address and token through `file_sync_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
 * The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync". A browser shows no sync section, since it is already on the server.
 
 Backups:
