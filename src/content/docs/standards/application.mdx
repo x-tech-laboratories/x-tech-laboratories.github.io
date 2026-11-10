@@ -171,6 +171,31 @@ Versioning:
 * `react`, `react-dom`, `fastify` and `@fastify/websocket` are `peerDependencies` of X-Libs, marked optional in `peerDependenciesMeta`, so a CLI or an agent installs neither.
 * An app depends on a caret range of X-Libs and Halon and installs its own single copy of React and Fastify.
 
+## Plugins
+
+An app that can be extended does it the same way in every app, so a plugin author meets one manifest, one set of extension points and one settings page. The modules are `plugins`, `plugin_folder` and `server/plugin_files` for any side of the app, and `web/plugin_imports` and `web/react/plugins` on the page. They are named in the [X-Libs README](https://github.com/x-tech-laboratories/X-Libs#readme).
+
+What a plugin is:
+
+* A plugin is a plain object: a manifest (`id`, `name`, semver `version`, the `app` and `app_versions` it is meant for, the plugins it `requires` with their versions, and its `settings` fields) and a `start(context)`. An app does not write its own plugin manager, registry or manifest.
+* The app says once, in its shared types, what plugins may reach: its `hooks`, `providers`, `slots` and `services`. Plugins are written with `define_plugin<TheApp'sApi>`.
+* A plugin adds hooks, providers, commands, slot contents and settings only through its context. Everything it added is taken back when it stops, is turned off or fails to start. A plugin does not reach into the app any other way.
+* Hooks are the app's own events, such as `task.created`, called with `host.call`. A throwing hook is reported through `on_error` and the rest still run, so a hook does not veto an action; the app reads a flag on the hook's argument for that. Providers are the app's named choices, such as X-Stream's `video_source`; the app picks one by id with `host.provider`.
+* Plugins start after the plugins they require. A plugin meant for another app or app version is refused, and one whose requirement is missing waits and starts when it arrives.
+
+Where plugins come from:
+
+* Bundled plugins are added with `host.add` and need nothing else. An app's own features that others could replace, such as a video source or an importer, are written as bundled plugins.
+* Folder plugins are optional. Each subfolder of the app's plugins folder holds a `package.json` with `"type": "module"` and `"x-plugin": { "server": "dist/server.js", "web": "dist/web.js" }`, one bundled ESM file per side. The server, agent and Electron main process read them with `load_plugin_folder`; the page gets its side from `register_plugin_files` and `load_plugin_modules`, after `share_modules` has handed over the page's React.
+* A web folder plugin is imported from a `data:` URL, so the page's Content-Security-Policy has to allow `data:` scripts for it.
+* Folder plugins run with the app's full rights and are not sandboxed. The app's README says so, and only plugins the user chose to install are loaded. An app that wants third-party plugins from strangers asks first, since that needs a sandbox X-Libs does not have.
+
+In the page:
+
+* The settings page shows `PluginSettings` under a section called "Plugins": each plugin's name, version, state and, when it cannot run, why, with an On switch and its settings fields. On and off and the settings are kept through `json_plugin_storage` in the app's own store, so they survive a restart.
+* Plugin parts of the page are drawn with `PluginSlot`, which leaves out a part that throws without taking the page down. Plugin commands are bound with `use_plugin_shortcuts` and listed in menus with `plugin_menu_items`.
+* The page draws after `host.start()` has finished, since pages ask for what plugins provide as they mount.
+
 ## Repository layout and scripts
 
 Reference layout (X-Backups):
@@ -348,6 +373,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Data on more than one device syncs through the X-Libs sync modules.
 * [ ] Data is backed up daily through the X-Libs backups, before every replace, with a Backups section in settings.
 * [ ] Items users edit keep a history through `create_history`.
+* [ ] An app that can be extended uses the X-Libs plugin host, with its bundled plugins, a Plugins section in settings and its trust note in the README.
 * [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
 * [ ] A CI workflow exists (`.github/workflows/ci.yml`).
 * [ ] A rendered test exists for each widget the app adds.
