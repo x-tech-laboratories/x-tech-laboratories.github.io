@@ -49,6 +49,16 @@ Rules per target:
 * A desktop or mobile app that must work offline keeps its own SQLite copy and syncs it with the server through the X-Libs sync modules; its page reaches that copy only through the app's bridge.
 * A server or an agent never shells out when a Node API does the job.
 
+Data and migrations (an app with a SQLite store):
+
+* The store is code in `src/shared` that runs unchanged on the server, in Electron's main process and in a phone's page, on the X-Libs `SqlDatabase`. It imports nothing from the DOM or from `node:` modules.
+* An app with several parts, such as a workout log and a food diary, keeps each in its own folder under `src/shared/<feature>/` with its own tables, calls and settings, and a list of features names them. Each feature's migrations are its own, run through `migrate(database, steps, { owner })`, so features change without renumbering each other's steps.
+* Tables are written once as a Drizzle schema (`schema.ts`, with the builders X-Libs re-exports). `drizzle-kit generate` writes each change as a migration, `x-libs-bundle-migrations` turns the migration folders into an `index.ts` the server, the desktop app and the phone's page all import, and `synced_tables(...)` reads the sync list, parents first, from the schema's primary keys. A released migration is never edited, only followed by a new one; data a migration only moves is made with `drizzle-kit generate --custom`.
+* Rows have ids that every device can make on its own, such as a UUID, and never an auto-incrementing key, since two devices would reuse it.
+* Queries go through `drizzle_of(database)` from X-Libs. Raw SQL is for what Drizzle does not express, such as `COLLATE NOCASE` or ordering by `rowid`.
+* The browser page imports only types from the stores, plus a small file that names the calls and the page's api, so the stores, their migrations and Drizzle stay out of the bundle a server sends. A page that needs a setting's default reads it from a plain settings file with no imports, or from the server, never from a store.
+* A call that only reads is named `list_`, `get_`, `search_`, `lookup_` or `export_`, and any other call announces a change to the other pages and devices.
+
 ## APIs and MCP
 
 Other programs reach an app's data as well as its own page does, so it can be scripted, linked to other tools and used by an AI client. Wherever an app has a server:
@@ -211,6 +221,7 @@ Script names, the same in every app:
 | `typecheck`   | `tsc -b --noEmit` or per target (optional)                 |
 | `test`        | `vitest run`                                               |
 | `lint`        | `oxlint`                                                   |
+| `db:generate` | `drizzle-kit generate` for every feature, then `x-libs-bundle-migrations` (apps with a Drizzle store) |
 
 An app adds its own commands (`hash-password`, `seed`) beside these and does not rename them.
 
