@@ -9,6 +9,7 @@ How X-Tech applications are built. Every app follows it where possible, so the s
 ## Purpose and scope
 
 * Every X-Tech app is written in TypeScript on Node with React.
+* The web app is the primary target. Desktop and mobile wrap the same React page, so every target shows the same X-Libs widgets.
 * One widget set, one agent and server stack and one toolchain are shared across apps. This is what lets X-Libs be used in full.
 * The standard covers new apps and rewrites. An existing app moves over in the order given under Current state.
 * Exceptions stay as they are until they are rewritten:
@@ -24,7 +25,7 @@ How X-Tech applications are built. Every app follows it where possible, so the s
 | --------------- | -------------------------------------------------------------------------------------- |
 | Web app         | React page bundled by Vite, served by a Fastify server                                 |
 | Desktop app     | Electron built with electron-vite, wrapping the same React UI                          |
-| Mobile app      | React Native                                                                           |
+| Mobile app      | Capacitor, wrapping the same React UI                                                  |
 | CLI and agent   | Node script in TypeScript, built on the X-Libs `agent` modules                         |
 
 Versions floor:
@@ -35,14 +36,15 @@ Versions floor:
 * Vite 8 or newer.
 * Fastify 5 or newer, with `@fastify/cookie`, `@fastify/session`, `@fastify/rate-limit`, `@fastify/static` and `@fastify/websocket` as the app needs them.
 * Electron and electron-vite at the current major.
-* React Native at the current stable release.
+* Capacitor at the current major.
 * `oxlint` for linting, `vitest` for tests.
 
 Rules per target:
 
-* A web app and a desktop app share one `src/web` React tree. The desktop app loads it in the renderer and reaches the main process through a preload bridge.
+* The web, desktop and mobile apps share one `src/web` React tree. The desktop app loads it in the renderer and reaches the main process through a preload bridge.
 * A desktop app that also ships as a web app runs the same Fastify server, either in the main process or as the web build.
-* A mobile app reuses the shared logic, `src/shared` and the X-Libs modules that do not touch the DOM. Its screens use React Native components, themed from the Halon tokens.
+* A mobile app loads the built `src/web` page in Capacitor and reaches the server over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-Libs when a second app needs them.
+* A page works at phone width, through the X-Libs `Shell` and the widgets' phone layouts.
 * The server owns the app's storage, a JSON store or SQLite as the data needs; the page and the agent reach it only through the server.
 * A server or an agent never shells out when a Node API does the job.
 
@@ -112,7 +114,7 @@ tsconfig.json  tsconfig.server.json  tsconfig.web.json
 vite.config.ts
 ```
 
-* A desktop app adds `src/main` and `src/preload` and builds with `electron.vite.config.ts`. A mobile app adds `src/native` for its screens. A target the app does not have gets no folder.
+* A desktop app adds `src/main` and `src/preload` and builds with `electron.vite.config.ts`. A mobile app adds `capacitor.config.json` and the generated `android/` project. A target the app does not have gets no folder.
 * `tsconfig.json` holds `references` only. Each target has its own `tsconfig.<target>.json`: `server` and `agent` use the Node types; `web` uses `jsx: react-jsx`, the `DOM` lib and `vite/client`.
 * `config.example.json` is the complete, working default config. `dev:server` runs against it.
 * `nix/` holds the package and the NixOS modules. `flake.nix` exposes the package, the modules and a dev shell. `shell.nix` serves `nix-shell`.
@@ -223,7 +225,7 @@ Each app as it is today.
 | --- | --- | --- | --- |
 | X-Backups | TypeScript, Fastify 5 on X-Libs' server modules, Vite 8, React 19, on X-Libs 0.11 and Halon 0.5, released as 0.3.0 | web (Fastify + React) and agent | none |
 | X-Nix | TypeScript, Fastify 5 on X-Libs' server modules, Vite 8, React 19, on X-Libs 0.11 and Halon 0.5, released as 0.3.0 | web (Fastify + React) and agent | none |
-| X-Tasks | TypeScript 7, Vite 8, React 19 in `src/web` on X-Libs 0.11 and Halon 0.5, Fastify 5 server on X-Libs' server modules, Electron on the X-Libs window and bridge, Capacitor for Android, vitest and oxlint, released as 0.2.1 | desktop (Electron), web, mobile (React Native) | `dev:server`/`dev:web` scripts; `.ts` import extensions; Capacitor to React Native later |
+| X-Tasks | TypeScript 7, Vite 8, React 19 in `src/web` on X-Libs 0.11 and Halon 0.5, Fastify 5 server on X-Libs' server modules, Electron on the X-Libs window and bridge, Capacitor for Android, vitest and oxlint, released as 0.2.1 | desktop (Electron), web, mobile (Capacitor) | `dev:server`/`dev:web` scripts; `.ts` import extensions |
 | X-Music | TypeScript 7, React 19 on X-Libs 0.11 and Halon 0.5, Electron 43 on the X-Libs window and bridge, better-sqlite3, oxlint, released as 0.1.2 | desktop (Electron) | none |
 | X-Stream | TypeScript 7, React 19 on X-Libs 0.11 and Halon 0.5, Electron on the X-Libs window, bridge, main-process fetch and streaming fetch, GPL-3.0-or-later, released as 0.2.1 | desktop (Electron) | none |
 | CODEX | TypeScript 7, electron-vite, React 19 on X-Libs 0.11 and Halon 0.5, X-Libs bridge envelopes, node-llama-cpp, vitest and oxlint, CI, released as 0.2.1 | desktop (Electron), agent | core/daemon files still camelCase; Electron tray, autostart and sidecar helpers to move into X-Libs |
@@ -237,7 +239,7 @@ Each app as it is today.
 
 Order:
 
-1. X-Libs: the web widgets are React, so React, Electron and React Native apps use one library (done).
+1. X-Libs: the web widgets are React, so web, Electron and Capacitor apps use one library (done).
 2. X-Backups and X-Nix: Preact to React on the X-Libs React widgets (done).
 3. X-Tasks housekeeping: tests and lint (done).
 4. X-Tasks and X-Music: Preact to React on X-Libs' widgets, their generic features pulled into X-Libs (done).
