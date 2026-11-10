@@ -48,6 +48,21 @@ Rules per target:
 * The server owns the app's storage, a JSON store or SQLite as the data needs; the page and the agent reach it only through the server.
 * A server or an agent never shells out when a Node API does the job.
 
+## APIs and MCP
+
+Other programs reach an app's data as well as its own page does, so it can be scripted, linked to other tools and used by an AI client. Wherever an app has a server:
+
+* Every call the page makes is open to other programs through the server's API, behind the same sign-in. A program sends the server's secret as a bearer header.
+* Every call is described once in an X-Libs `api_spec`: what it does in plain words, and a JSON Schema for each argument. The spec is typed against the app's method table, so a call without one fails to compile.
+* The server serves the same calls three ways from that one spec:
+  * the app's own API, which takes the arguments as a list in order or by name as a JSON object;
+  * `GET /api/openapi.json`, an OpenAPI 3.1 document from `openapi_document`;
+  * `/api/mcp`, every call as an MCP tool over streamable HTTP from X-Libs `server/mcp`, which wraps the official SDK (`@modelcontextprotocol/server`).
+* A call that only reads is named so (`list_`, `get_`, `search_` and the like) and is marked read-only to MCP clients. A change made through the API or MCP reaches open pages and devices as if made in the app.
+* Values cross the API in the units the app stores, and the spec says which.
+* What the API returns leaves out keys and passwords for other services.
+* An app without a server, such as a desktop-only app, offers MCP where its host allows, or writes down in its `README.md` why it cannot.
+
 ## Shared code
 
 Code that two apps need lives in `@x-tech-laboratories/x-libs` (repo X-Libs). Styling lives in `@x-tech-laboratories/halon` (repo X-Themes). An app imports it and does not write its own copy.
@@ -59,6 +74,7 @@ Comes from X-Libs:
 * Durations, sizes, times and formatting: `durations` and `web/format`. They wrap `parse-duration`, `Intl` and `pretty-bytes`; an app does not parse or format these itself.
 * The web shell and widgets: `Shell`, layout, badges, controls, tables, toasts, dialogs, menus, split panes and the `use_resource` states.
 * The hash router and the theme choice: `web/router` and `web/theme`.
+* Describing the API and serving it to other programs: `api_spec` and `server/mcp`.
 
 Comes from Halon:
 
@@ -261,6 +277,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Depends on `@x-tech-laboratories/x-libs` and `@x-tech-laboratories/halon`; no re-implemented login, agent, formatting, widget or theme code.
 * [ ] Imports Halon's tokens and stylesheet once; `app.css` holds layout only.
 * [ ] Login uses `server/passwords`; agents use the X-Libs agent modules.
+* [ ] Every call has an `api_spec` entry, and the server offers `/api/openapi.json` and `/api/mcp`.
 * [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
 * [ ] A CI workflow exists (`.github/workflows/ci.yml`).
 * [ ] A rendered test exists for each widget the app adds.
