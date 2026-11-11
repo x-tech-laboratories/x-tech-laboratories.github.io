@@ -115,6 +115,7 @@ Sync:
 * The newest write of each value wins. The first time a device connects, the user chooses which copy wins, and the other is backed up before it is replaced.
 * A device keeps the server's address and token through `file_sync_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
 * The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync", where the device signs in with the user's name and password and asks before one copy replaces the other. A browser shows no sync section, since it is already on the server.
+* A server whose https certificate the device refuses, such as a home server's self-signed one, is reached only after the user trusts it, through X-Libs' certificates. The dialog shows the certificate and what is wrong with it, and trusts that exact certificate for that host alone. The desktop keeps them with `create_certificate_trust`, honours them with `trust_in_session`, and sends sync through `trusting_fetch`. A phone uses `phone_certificates`, whose plugin lets the WebView through. The page passes `certificates` to `SyncSettings`, places `SyncCertificatePrompt` once, and lists `TrustedCertificates` in the Sync section. An app never turns certificate checks off, trusts a whole authority for every host, or writes its own certificate handling.
 
 Backups:
 
@@ -382,6 +383,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Signing in uses the X-Libs accounts (`register_accounts`, `SignInForm`, `AccountView`, `UsersView`) and says "Sign in" and "Sign out"; agents use the X-Libs agent modules.
 * [ ] Every call has an `api_spec` entry, and the server offers `/api/openapi.json` and `/api/mcp`.
 * [ ] Data on more than one device syncs through the X-Libs sync modules.
+* [ ] A server with a self-signed or untrusted certificate is reached only after the user trusts it, through the X-Libs certificate modules.
 * [ ] Data is backed up daily through the X-Libs backups, before every replace, with a Backups section in settings.
 * [ ] Items users edit keep a history through `create_history`.
 * [ ] An app that can be extended uses the X-Libs plugin host, with its bundled plugins, a Plugins section in settings and its trust note in the README.
