@@ -45,6 +45,7 @@ Rules per target:
 * A desktop app that also ships as a web app runs the same Fastify server, either in the main process or as the web build.
 * A mobile app loads the built `src/web` page in Capacitor and reaches the server over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-Libs when a second app needs them.
 * A page works at phone width, through the X-Libs `Shell` and the widgets' phone layouts.
+* Every app's sidebar ends in the same foot, drawn by the `Shell` and pinned to the sidebar's bottom while the rows above it scroll: the app's own rows, such as sync state, then the theme, then the signed-in user and Sign out, then Settings, last. None of these sits in the top bar, which holds only the brand and the app's tools.
 * The server owns the app's storage, a JSON store or SQLite as the data needs; the browser page and the agent reach it only through the server.
 * A desktop or mobile app that must work offline keeps its own SQLite copy and syncs it with the server through the X-Libs sync modules; its page reaches that copy only through the app's bridge.
 * A server or an agent never shells out when a Node API does the job.
@@ -96,7 +97,7 @@ Words: the app says "Sign in" and "Sign out", never "Log in" or "Log out", and "
 
 Account pages:
 
-* The top bar shows the signed-in user's name, linked to Your account, and a Sign out button.
+* The sidebar's foot shows the signed-in user's name, linked to Your account, with a Sign out button beside it, between the theme and Settings (the `Shell`'s `user`, `user_href`, `on_logout` and `settings`).
 * Your account (`AccountView`) lets each user change their password, turn the second factor on or off, see where they are signed in and sign any of those out, and make and revoke tokens.
 * Users (`UsersView`), shown only to admins, adds, edits and removes users, resets a second factor and signs a user out everywhere. Changing a user's role, access or password signs them out everywhere.
 
