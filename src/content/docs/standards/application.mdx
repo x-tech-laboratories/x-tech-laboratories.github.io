@@ -81,7 +81,7 @@ Every app whose users sign in does it the same way, so a user meets one sign-in 
 
 Who signs in:
 
-* Users have a name and password. The users in the accounts file (`<APP>_PASSWORD_HASH_FILE`, one `name:hash` line each, written by `npm run hash-password`) are admins, and the page cannot change their role or password. Admins add every other user on the Users page.
+* Users have a name and password. The users in the accounts file (`<APP>_PASSWORD_HASH_FILE`, one `name:hash` line each, written by `npm run hash-password`) are admins, and the page cannot change their role or password. Admins add every other user under Settings → Users.
 * Users, sessions and tokens are kept in the app's own SQLite database, so a restart signs no one out.
 * Roles are the app's own, ordered from least to most able, with the last role managing users. An app that grants more than everything or nothing gives its own access rules and an editor for them.
 * Single sign-on through an OpenID Connect provider (`<APP>_OIDC_*`) and a trusted reverse proxy's user header are optional. Both sign in only users an admin has added.
@@ -99,20 +99,24 @@ Account pages:
 
 * The sidebar's foot shows the signed-in user's name, linked to Your account, with a Sign out button beside it, between the theme and Settings (the `Shell`'s `user`, `user_href`, `on_logout` and `settings`).
 * Your account (`AccountView`) lets each user change their password, turn the second factor on or off, see where they are signed in and sign any of those out, and make and revoke tokens.
-* Users (`UsersView`), shown only to admins, adds, edits and removes users, resets a second factor and signs a user out everywhere. Changing a user's role, access or password signs them out everywhere.
+* Users, shown only to admins, is the Users and Tokens sections of the settings page (`users_settings`), not a page or sidebar row of its own. It adds, edits and removes users, resets a second factor, signs a user out everywhere and lists every user's tokens. Changing a user's role, access or password signs them out everywhere.
 
 Devices and programs:
 
 * A desktop or phone app that syncs signs in from `SyncSettings` with the same name and password, and gets a token of its own, named for the device. Stop syncing gives the token back.
 * A program uses a token made on Your account, read-only unless the user unticks that, sent as `Authorization: Bearer <token>`. A token cannot change the account it belongs to.
 
-## Sync, backups and history
+## Settings, sync, backups and history
 
 An app's data is kept the same way in every app, so users get the same safety everywhere and X-Libs holds one copy of the code. The modules are named in the [X-Libs README](https://github.com/x-tech-laboratories/X-Libs#readme).
 
+Settings:
+
+* Every app has a Settings page, the last row of the sidebar's foot (the `Shell`'s `settings`), drawn with `SettingsPage`: each feature's own sections, then those of Sync, Backups and Plugins below, and for an admin on the server Users and Tokens. An app keeps no settings anywhere else, such as in a dialog or on a page of their own.
+
 Sync:
 
-* An app whose data lives on more than one device, such as a desktop or phone app with its own copy and a server, syncs through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the server and `create_sync_client` on each device. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
+* Every app should sync, so its data is the same on a server and every device; an app whose data lives on more than one device, such as a desktop or phone app with its own copy and a server, must. Either way it syncs through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the server and `create_sync_client` on each device. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
 * The newest write of each value wins. The first time a device connects, the user chooses which copy wins, and the other is backed up before it is replaced.
 * A device keeps the server's address and token through `file_sync_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
 * The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync", where the device signs in with the user's name and password and asks before one copy replaces the other. A browser shows no sync section, since it is already on the server.
@@ -128,11 +132,11 @@ Backups:
 
 History:
 
-* An app whose users make and edit items, such as tasks, transactions or workouts, keeps a history of them through `create_history`. Every change to an item is a version; any version can be restored, and a deleted item can be brought back with what was deleted along with it.
+* Every app keeps a history of the items its users make and edit, such as tasks, transactions or workouts, through `create_history`. Every change to an item is a version; any version can be restored, and a deleted item can be brought back with what was deleted along with it.
 * The history watches every table that changes an item, the item's tags and links included. `record` runs after every write, however the write was made, the API and MCP included.
 * The versions table syncs like any other (`history.synced_table`), and `history.forget_touched` is the sync engine's `after_apply`, so each version is recorded once, by the device that made it.
 * Versions older than a set number of days are pruned, keeping each item's newest. The number of days is a setting.
-* The page shows an item's history from the item itself, and the latest changes to every item on a page of their own, through the `history_methods` calls.
+* Every app has a History page, a row of the sidebar, showing the latest changes to every item, and shows an item's history from the item itself, through the `history_methods` calls. How long versions are kept is a setting on the Settings page, not on the History page.
 
 Where these do not fit, such as an app whose data is a cache of files or of another service, or a log that is never edited, the app's `README.md` says which it leaves out and why.
 
@@ -381,12 +385,13 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] `config.example.json` runs the app as it stands.
 * [ ] Depends on `@x-tech-laboratories/x-libs` and `@x-tech-laboratories/halon`; no re-implemented sign-in, agent, formatting, widget or theme code.
 * [ ] Imports Halon's tokens and stylesheet once; `app.css` holds layout only.
-* [ ] Signing in uses the X-Libs accounts (`register_accounts`, `SignInForm`, `AccountView`, `UsersView`) and says "Sign in" and "Sign out"; agents use the X-Libs agent modules.
+* [ ] Signing in uses the X-Libs accounts (`register_accounts`, `SignInForm`, `AccountView`, `users_settings`) and says "Sign in" and "Sign out"; agents use the X-Libs agent modules.
 * [ ] Every call has an `api_spec` entry, and the server offers `/api/openapi.json` and `/api/mcp`.
-* [ ] Data on more than one device syncs through the X-Libs sync modules.
+* [ ] A Settings page in the sidebar's foot, with Users and Tokens sections for an admin, and a History page in the sidebar.
+* [ ] Data syncs through the X-Libs sync modules; data on more than one device must.
 * [ ] A server with a self-signed or untrusted certificate is reached only after the user trusts it, through the X-Libs certificate modules.
 * [ ] Data is backed up daily through the X-Libs backups, before every replace, with a Backups section in settings.
-* [ ] Items users edit keep a history through `create_history`.
+* [ ] Items users edit keep a history through `create_history`, shown on the History page.
 * [ ] An app that can be extended uses the X-Libs plugin host, with its bundled plugins, a Plugins section in settings and its trust note in the README.
 * [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
 * [ ] A CI workflow exists (`.github/workflows/ci.yml`).
