@@ -1,15 +1,6 @@
-/* Brand blue accent, in both colour schemes. */
+/* Colours come from Halon; the site keeps its own typefaces. */
 :root {
-	--sl-color-accent-low: #00264d;
-	--sl-color-accent: #0088ff;
-	--sl-color-accent-high: #b3dbff;
 	--sl-font: 'Noto Sans', system-ui, sans-serif;
-}
-
-:root[data-theme='light'] {
-	--sl-color-accent-low: #cce6ff;
-	--sl-color-accent: #0070d6;
-	--sl-color-accent-high: #00284d;
 }
 
 /* Headings use the logo's typeface. */

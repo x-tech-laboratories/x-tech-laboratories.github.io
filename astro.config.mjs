@@ -17,6 +17,8 @@ export default defineConfig({
 			],
 			editLink: { baseUrl: 'https://github.com/x-tech-laboratories/x-tech-laboratories.github.io/edit/main/' },
 			customCss: [
+				'@x-tech-laboratories/halon/halon-tokens.css',
+				'@x-tech-laboratories/halon/starlight.css',
 				'@fontsource/noto-sans/400.css',
 				'@fontsource/noto-sans/700.css',
 				'@fontsource/rajdhani/700.css',
