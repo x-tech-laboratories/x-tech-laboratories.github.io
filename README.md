@@ -2,6 +2,8 @@
 
 [![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/x-tech-laboratories.github.io.json)](https://x-tech-laboratories.github.io/guidelines/readiness/)
 
+<a href="https://liberapay.com/BeatLink/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
+
 Source for <https://x-tech-laboratories.github.io>, the home page of the X-Tech Laboratories community.
 
 Built with [Astro Starlight](https://starlight.astro.build). Pages are MDX files in
