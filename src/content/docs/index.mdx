@@ -5,32 +5,30 @@ template: splash
 hero:
   title: Technology, used creatively, for the people who use it.
   tagline: X-Tech Laboratories is an open source community that builds software people can shape to their own needs, that works with everything else they use, and that brings together the best of what open source already offers.
-  image:
-    file: ../../../org/branding/icon/icon.svg
+  image: ../../../org/branding/icon/icon.svg
   actions:
     - text: Get involved
       link: /join/
-      icon: right-arrow
     - text: Our projects
       link: /projects/
       variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@x-tech-laboratories/x-libs/web/react/site';
 
 ## What we stand for
 
 <CardGrid>
-  <Card title="Extensible, configurable, interoperable" icon="puzzle">
+  <Card title="Extensible, configurable, interoperable">
     Apps adapt to their users, not the other way round: plugins, settings, themes and layouts, built on open formats and standard protocols so they work with other tools. When people want different things, the answer is a plugin or a setting, not a fork. Software built this way reaches the largest number of people.
   </Card>
-  <Card title="Consolidate, don't fragment" icon="random">
+  <Card title="Consolidate, don't fragment">
     Open source spreads its effort across rival projects that each do part of the job. We bring their best features together under one roof and import their data, so switching costs nothing.
   </Card>
-  <Card title="Automation over toil" icon="rocket">
+  <Card title="Automation over toil">
     CI/CD and test-driven development carry the routine load. Tests are the contract every change must meet, builds, releases and checks run on their own, and a reproducible development environment works on the first day. Maintainers spend their time on direction and design.
   </Card>
-  <Card title="AI-assisted development" icon="open-book">
+  <Card title="AI-assisted development">
     AI is welcome and used in the open: accountable, disclosed, reviewed, and guided by each project's `AGENTS.md`.
   </Card>
 </CardGrid>

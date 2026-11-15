@@ -1,4 +1,22 @@
-/* Colours come from Halon; text and headings are all Noto Sans, as the Design Guidelines ask. */
-:root {
-	--sl-font: 'Noto Sans', system-ui, sans-serif;
+/* Colours, layout and the Noto Sans font all come from Halon; this sheet holds only the site's own tables. */
+
+/* The Awesome AI-Assisted Open Source tables: each project's licence and readiness checks in quiet text. */
+.awesome small {
+	color: var(--text-secondary);
+}
+.awesome .score ul {
+	margin: var(--space-2) 0 0;
+	padding: 0;
+	font-size: var(--text-caption);
+	list-style: none;
+	white-space: nowrap;
+}
+.awesome .score li {
+	margin: 0;
+}
+.awesome .score .pass span[aria-hidden] {
+	color: var(--accent);
+}
+.awesome .score .fail {
+	color: var(--text-tertiary);
 }
