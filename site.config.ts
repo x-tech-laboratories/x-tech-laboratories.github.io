@@ -52,6 +52,7 @@ export default define_site({
 	],
 	sidebar: [
 		{ slug: '', label: 'Home', translations: { es: 'Inicio' } },
+		{ slug: 'founder' },
 		{ label: 'Guidelines', translations: { es: 'Guías' }, autogenerate: { directory: 'guidelines' } },
 		{ label: 'Standards', translations: { es: 'Estándares' }, autogenerate: { directory: 'standards' } },
 		{ slug: 'projects' },

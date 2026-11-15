@@ -1,0 +1,147 @@
+---
+title: Founder's statement
+description: Why X-Tech Laboratories exists, how it is run, and how and why it uses AI.
+---
+
+Hi, my name is BeatLink. I'm an open source developer and the founder of X-Tech Laboratories. Right
+now X-Tech is just me, but the goal is a shared ecosystem of open source applications: take the best
+ideas from existing projects, consolidate them into a small set of well-maintained core applications,
+and use AI so that a small team, or even one person, can build and maintain them.
+
+## The problem
+
+Open source keeps solving the same problems in parallel, and users pay for it. In my years in the
+community, I've watched the same pattern repeat:
+
+- **Fragmentation.** Forks and competing projects each get one thing right and miss others, so users
+  choose between trade-offs instead of a complete tool.
+- **Thin maintainer teams.** A handful of volunteers carry large codebases, and burnout is common.
+- **Slow progress.** With few hands and scattered effort, fixes and features land slowly, while
+  proprietary competitors move fast.
+
+The result is software that is free and trustworthy but often a step behind what it could be.
+
+## What X-Tech is
+
+X-Tech aims to be a focal point: one place to build, contribute to and improve the everyday
+applications people rely on. Instead of starting another competing project, each X-Tech application
+starts from a survey of what existing projects do best and brings those strengths together in one
+place.
+
+The first flagship projects:
+
+| Project | What it consolidates | Status |
+| --- | --- | --- |
+| [X-Music](/projects/#x-music) | gmusicbrowser's library engine and data model, with an interface people can re-layout and re-skin, and import of an existing gmusicbrowser library | Work in progress |
+| [X-Fitness](/projects/#x-fitness) | Workout logging, a food diary with around 80 nutrients and body tracking in one app, with exercises from wger, foods from USDA and Open Food Facts, and import of Liftosaur workouts | Usable |
+| [X-Libs](/projects/#x-libs) | Common functionality reused across all X-Tech apps: accounts, sync, history, plugins and a shared set of widgets | Usable |
+
+See [all projects](/projects/) for the rest.
+
+X-Tech is also meant to be a home for AI-assisted development. Many open source projects don't accept
+AI-assisted contributions, and that's their right. But it leaves developers who use AI responsibly
+with nowhere to build. X-Tech aims to be the place where they can create AI-friendly alternatives,
+under clear rules for quality and transparency (see [How and why we use AI](#how-and-why-we-use-ai)).
+
+I know a new project can easily become one more fork. The difference is consolidation. Instead of
+splitting off to add one feature, each X-Tech app brings together the best of several projects, with
+plugins and adapters so nobody needs to fork it again.
+
+## Principles and governance
+
+Everyone has different tastes, so every X-Tech project will be built to bend rather than break,
+following four principles:
+
+- **Extensibility.** Core functionality can be extended without forking.
+- **Interoperability.** Our apps work with each other and with the wider ecosystem, using open formats
+  and standards.
+- **Pluggability.** Features that not everyone wants live in plugins and adapters, not in the core.
+- **Customisability.** We ship sane defaults for most people. Where opinions differ, there's a
+  setting, a plugin or an adapter.
+
+Common functionality moves into shared libraries, so a fix in one place improves every app that uses
+it.
+
+### Respecting the projects we learn from
+
+Not every project X-Tech draws from will welcome this approach, and X-Tech doesn't need their approval
+to build something new. I hold myself to these rules, and so will everyone who joins:
+
+1. Follow every licence, and only combine code under compatible licences.
+2. Credit the original authors clearly, in the code and in our docs.
+3. Respect each project's AI policy. We never submit AI-assisted contributions to a project that
+   doesn't accept them.
+4. Contribute fixes and improvements back upstream wherever a project welcomes them.
+
+### How decisions get made
+
+For now, I make the decisions, but in the open, through public issues and discussions where anyone
+can weigh in. As more people join, decisions will move to issues, discussions and polls. When
+opinions differ, extra weight will go to two groups: long-standing members, and the people whose work
+formed the basis of an X-Tech app or project, whenever they choose to take part.
+
+## How and why we use AI
+
+We use AI to enable rapid development, prototyping and maintenance. Its use is one of the most
+controversial debates in open source right now, if not the most controversial, and for good reasons:
+
+- **Consent.** Most AI models were trained on open source work without permission or consent from its
+  authors.
+- **Sustainability.** The data centres that run AI use massive amounts of water and energy. That
+  affects our climate and burdens the local communities where they're built.
+- **Corporate misuse.** For-profit corporations are developing and using AI in ways that don't always
+  benefit their customers: replacing jobs, making platforms more addictive, creating fake personas to
+  promote products, and influencing public opinion and rewriting online consensus.
+- **Serious risks.** Mistrained, misprompted or maliciously used AI can enable widespread
+  cyberattacks, election interference, or the development of bioweapons. That isn't a far-off
+  dystopian future. It's a real risk today.
+
+Here's my perspective. AI is a tool, and a very powerful one. But a tool has no inherent morality.
+What matters is how it's used. A knife can be used to hurt someone, but it can also be used in
+surgery to save a life.
+
+And AI is here to stay. The AI bubble may pop, and companies may go bankrupt or consolidate, but the
+technology itself isn't going anywhere. Malicious actors will keep using it maliciously, whether the
+open source community accepts AI or sticks its head in the sand. So it's our job to use it for good,
+in ways that are ethical, sustainable and empowering to everyone.
+
+That's already happening. Individuals at home are building free and open source applications that
+could, almost overnight, replace entrenched proprietary software that corporations have made billions
+from (looking at you, Adobe). People are using AI to find and close security bugs that have sat in
+foundational libraries and platforms for years. Others are using it to take back their privacy by
+checking what closed-source software is really doing, and blowing the whistle on companies that
+surveil and spy on their users.
+
+AI is one of the most powerful tools and equalisers the open source community has for standing up to
+exploitative for-profit corporations that only want their users' money and data. With AI, open
+source projects can be developed faster, reviewed more quickly and maintained better, and they can
+ship features that rival proprietary products.
+
+But "it's just a tool" isn't enough on its own. Here's how I use it, and the rules X-Tech will hold
+every contributor to:
+
+| Concern | What we do |
+| --- | --- |
+| Code quality and reviewer burden | A human reviews and is responsible for every change. AI-assisted contributions meet the same bar as any other, and we don't accept low-effort generated PRs or bug reports. |
+| Transparency | AI-assisted commits and PRs are disclosed: every AI-assisted commit carries an `Assisted-by:` trailer naming the tool, and every pull request says which parts AI wrote. See [disclosure](/guidelines/disclosure/). |
+| Licensing and attribution | Generated code is checked for close matches to existing code, and we follow the original licence and credit when we find one. |
+| Environmental cost | We prioritise local and distributed LLMs, and put development effort into improving them, so AI-assisted work can run on hardware people already own instead of in massive centralised data centres. We use AI where it saves real effort, not by default. |
+| Who benefits | Everything we build is free and open source, so the value goes back to the community instead of to a platform. |
+
+The only way any good comes from AI is if we band together and use it in ways that benefit everyone.
+AI was built on the sweat, tears and work of the open source community. It's time we got paid for
+that work.
+
+## Get involved
+
+Right now X-Tech is one person with a big idea, and it only works if more people help build it.
+Whether you write code, test, design, document, or just have strong opinions about how your tools
+should work, there's a place for you.
+
+- **Code:** [github.com/x-tech-laboratories](https://github.com/x-tech-laboratories)
+- **Chat:** [#x-tech-laboratories:matrix.org](https://matrix.to/#/#x-tech-laboratories:matrix.org) on Matrix
+- **Roadmap and discussions:** [GitHub Discussions](https://github.com/orgs/x-tech-laboratories/discussions)
+- **Contributing guide:** [CONTRIBUTING.md](https://github.com/x-tech-laboratories/.github/blob/main/CONTRIBUTING.md),
+  and [how to get involved](/join/)
+
+If you maintain a project X-Tech draws from, I'd especially like to hear from you.
