@@ -11,7 +11,7 @@
     in
     {
       devShells = forAll (pkgs: {
-        default = pkgs.mkShell { packages = [ pkgs.nodejs_22 pkgs.gh ]; };
+        default = pkgs.mkShell { packages = [ pkgs.nodejs_24 pkgs.gh ]; };
       });
     };
 }

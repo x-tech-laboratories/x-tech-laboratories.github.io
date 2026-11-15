@@ -24,9 +24,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+          # The whole history, so each page shows the date of its last commit.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - name: Refresh readiness scores

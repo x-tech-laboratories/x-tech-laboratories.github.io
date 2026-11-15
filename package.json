@@ -5,22 +5,39 @@
 	"private": true,
 	"license": "MIT AND CC-BY-SA-4.0",
 	"scripts": {
-		"dev": "astro dev",
-		"build": "astro build",
-		"preview": "astro preview",
-		"astro": "astro",
+		"dev": "x-libs-site dev",
+		"build": "x-libs-site build",
+		"preview": "x-libs-site preview",
 		"test": "node --test",
 		"readiness": "node scripts/readiness.mjs",
-		"lint": "npx -y prettier@3.9.9 --check \"**/*.{mjs,ts,json,yml,css}\"",
-		"format": "npx -y prettier@3.9.9 --write \"**/*.{mjs,ts,json,yml,css}\""
+		"lint": "npx -y prettier@3.9.9 --check \"**/*.{mjs,ts,tsx,json,yml,css}\"",
+		"format": "npx -y prettier@3.9.9 --write \"**/*.{mjs,ts,tsx,json,yml,css}\""
 	},
 	"dependencies": {
-		"@astrojs/starlight": "0.42.4",
 		"@fontsource/noto-sans": "5.3.0",
-		"@x-tech-laboratories/halon": "0.18.0",
-		"astro": "7.3.4"
+		"@mdx-js/rollup": "^3.1.1",
+		"@shikijs/rehype": "^4.6.0",
+		"@x-tech-laboratories/halon": "^0.21.0",
+		"@x-tech-laboratories/x-libs": "^0.50.0",
+		"pagefind": "^1.6.0",
+		"react": "^19.3.1",
+		"react-dom": "^19.3.1",
+		"rehype-autolink-headings": "^7.1.0",
+		"rehype-slug": "^6.0.0",
+		"remark-frontmatter": "^5.0.0",
+		"remark-gfm": "^4.0.1",
+		"shiki": "^4.6.0",
+		"unist-util-visit": "^5.2.0",
+		"vite": "^8.3.8",
+		"yaml": "^2.9.1"
 	},
 	"devDependencies": {
-		"ai-readiness": "github:x-tech-laboratories/ai-readiness#v0.2.0"
+		"ai-readiness": "github:x-tech-laboratories/ai-readiness#v0.2.0",
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0",
+		"typescript": "^7.0.2"
+	},
+	"engines": {
+		"node": ">=24"
 	}
 }
