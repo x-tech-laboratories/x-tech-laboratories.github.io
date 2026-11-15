@@ -5,7 +5,133 @@ description: Free software built in the open by the X-Tech Laboratories communit
 
 These projects live in the
 [X-Tech Laboratories organisation](https://github.com/x-tech-laboratories). Each follows the
-community's guidelines, so anyone can contribute, with or without AI tools.
+community's guidelines, so anyone can contribute, with or without AI tools. All of them are free
+software under the GPL, version 3 or later.
+
+| Project | What it is | Status |
+| --- | --- | --- |
+| [X-Backups](#x-backups) | Borg backups for all your machines, from one web page | Usable |
+| [X-Budget](#x-budget) | A monthly budget, planned once and measured every month | Work in progress |
+| [X-Fitness](#x-fitness) | Workouts, diet and body measurements in one app | Usable |
+| [X-Libs](#x-libs) | The shared library every X-app is built on | Usable |
+| [X-Login](#x-login) | A LightDM login screen drawn as a web page, packaged for NixOS | Usable |
+| [X-Media-Tracker](#x-media-tracker) | Your movies and TV shows, watched and still to watch | Usable |
+| [X-Monitor](#x-monitor) | A network and system monitor for Linux | Usable |
+| [X-Music](#x-music) | A desktop music player with a real library engine | Work in progress |
+| [X-Nix](#x-nix) | NixOS deployments across a fleet of machines, from one web page | Usable |
+| [X-Plymouth](#x-plymouth) | A NixOS boot splash that pulses the NixOS logo | Usable |
+| [X-Tasks](#x-tasks) | A to-do manager with projects, habits, rule tags and many views | Usable |
+
+## X-Backups
+
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Backups.json)](/guidelines/readiness/)
+
+**Borg backups for all your machines, from one web page.** A small agent on each host runs every
+backup, prune, check and compact on schedules X-Backups keeps itself. The page shows how fresh,
+large and healthy each backup is, maps what is backed up where, and lets you browse, compare,
+download and restore archives.
+
+**Status: usable.** Users and roles, single sign-on, a health API for X-Monitor and Prometheus, and
+NixOS modules for the server and the agent all work. Creating repositories from the page,
+notifications and cloud sync are still to come.
+
+![The X-Backups overview, with health tiles and a map of sources, jobs and repositories](/screenshots/x-backups.png)
+
+[Documentation](https://x-tech-laboratories.github.io/X-Backups/) ·
+[Source code](https://github.com/x-tech-laboratories/X-Backups)
+
+## X-Budget
+
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Budget.json)](/guidelines/readiness/)
+
+**A budget you plan once and measure every month.** Plan income and expense lines nested as deep as
+you like, record each month's transactions, and see how the month measured up, with what stayed
+within the plan kept apart from what went off budget. It runs on the web, on the desktop and on
+Android; the apps work offline and sync through your own server.
+
+**Status: work in progress.** The plan, transactions, monthly report, history with restore, several
+budgets and import from the Trilium Budget add-on work. There are no released builds yet.
+
+![The X-Budget report for a month, with income, spending and what went off budget](/screenshots/x-budget.png)
+
+[Source code](https://github.com/x-tech-laboratories/X-Budget)
+
+## X-Fitness
+
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Fitness.json)](/guidelines/readiness/)
+
+**Workouts, diet and body measurements in one app.** Log workouts with programs, sets and a rest
+timer; keep a food diary with around 80 nutrients against your targets; and track body metrics
+with goals, trends and a 3D body shaped to your readings. It runs on the web, on the desktop and on
+Android, and syncs through your own server.
+
+**Status: usable.** Workouts, diet, body tracking, training calculators, sync and a version history
+for every item all work.
+
+![The X-Fitness overview, with today's energy and protein against targets and workouts per week](/screenshots/x-fitness.png)
+
+[Source code](https://github.com/x-tech-laboratories/X-Fitness)
+
+## X-Libs
+
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Libs.json)](/guidelines/readiness/)
+
+**The shared library every X-app is built on.** One npm package, `@x-tech-laboratories/x-libs`,
+with about a hundred modules: accounts and sign-in, SQLite sync, history and backups, plugins,
+Electron and Android helpers, a set of React widgets drawn with the Halon theme, and the framework
+this website is built with. When one app builds something another could use, it moves here.
+
+**Status: usable.** It is released and used by every X-app. More pieces from the apps are moving in.
+
+[Source code](https://github.com/x-tech-laboratories/X-Libs)
+
+## X-Login
+
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Login.json)](/guidelines/readiness/)
+
+**A LightDM login screen drawn as a web page.** X-Login builds on
+[web-greeter](https://github.com/JezerM/web-greeter), a greeter whose themes are written in HTML,
+CSS and JavaScript, and adds a Nix flake so it installs on NixOS.
+
+**Status: usable.** It logs in with web-greeter's own themes, one of which is shown below. A theme
+in the X-Tech style is still to come.
+
+![The Dracula theme of the login screen, with the clock, session picker and power buttons](/screenshots/x-login.png)
+
+[Source code](https://github.com/x-tech-laboratories/X-Login)
+
+## X-Media-Tracker
+
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Media-Tracker.json)](/guidelines/readiness/)
+
+**Your movies and TV shows, watched and still to watch.** Keep what you plan to watch, are
+watching, watched or dropped, with ratings, every episode ticked off and your own collections.
+Details and posters come from TMDB, and it imports from Trakt, Stremio and the Trilium Media
+Tracker add-on. It runs on the web, on the desktop and on Android, and syncs through your own
+server.
+
+**Status: usable.** The library, title pages, episode tracking, collections, imports and sync all
+work.
+
+![The X-Media-Tracker library as a table, with status, rating and episode progress](/screenshots/x-media-tracker.png)
+
+[Source code](https://github.com/x-tech-laboratories/X-Media-Tracker)
+
+## X-Monitor
+
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Monitor.json)](/guidelines/readiness/)
+
+**A network and system monitor for Linux.** X-Monitor watches your machines, homelab and small
+network from one dashboard, and can act on what it watches: restart a service, reboot a host or
+wake it over the network. Hosts you control run an optional agent that streams events as they
+happen; routers, switches and appliances are watched without one, over SSH, HTTP, DNS and ICMP.
+
+**Status: usable.** Monitors are plugins, logs from every host can be searched at once, and results
+reach you through notifications, Prometheus, InfluxDB and MQTT. X-Monitor was called Vigil.
+
+![The X-Monitor overview on a demo fleet](/screenshots/x-monitor.png)
+
+[Source code](https://github.com/x-tech-laboratories/X-Monitor)
 
 ## X-Music
 
@@ -16,52 +142,57 @@ model and power with a user interface people can re-layout and re-skin, and impo
 gmusicbrowser library. A track is a piece of music, not a file: it survives renames, moves, format
 changes and retagging, so your ratings and play history never get lost.
 
-X-Music is our flagship project and is in early development. The library core, query engine,
-playback and gmusicbrowser import work; tag writing and media keys are still to come.
+**Status: work in progress.** The library, filtering, playback and gmusicbrowser import work; tag
+writing, media keys and smart playlists are still to come.
 
-[Source code](https://github.com/x-tech-laboratories/X-Music) · GPL-3.0-or-later ·
-[Contribute](https://github.com/x-tech-laboratories/X-Music/blob/main/AGENTS.md)
+![The X-Music main window, with the player, filter panes and song list](/screenshots/x-music.png)
 
-## X-Stream
+[Source code](https://github.com/x-tech-laboratories/X-Music)
 
-[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Stream.json)](/guidelines/readiness/)
+## X-Nix
 
-**A privacy-respecting YouTube client.** X-Stream lets you search, watch and subscribe to YouTube
-channels without being tracked by Google. Your subscriptions and history live on your own device,
-and it imports them from FreeTube.
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Nix.json)](/guidelines/readiness/)
 
-X-Stream is in early development. Search, channels, subscriptions, history and adaptive playback
-up to 2160p work in the desktop app; installers, mobile builds and sync between devices are still
-to come.
+**NixOS deployments across a fleet of machines, from one web page.** X-Nix shows which hosts have
+drifted from their flake, then updates, builds and switches them, with a closure diff before each
+switch, health checks and automatic rollback. It also cleans the Nix store, manages boot entries,
+and builds for and pushes to an Attic binary cache.
 
-[Source code](https://github.com/x-tech-laboratories/X-Stream) · GPL-3.0-or-later ·
-[Contribute](https://github.com/x-tech-laboratories/X-Stream/blob/main/AGENTS.md)
+**Status: usable.** Flakes, deployments, fleet runs, caches and provisioning work. Testing
+wake-on-LAN on real hardware is still to come.
 
-## X-Monitor
+![The X-Nix overview, with host status and a map of which flakes build which hosts](/screenshots/x-nix.png)
 
-[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Monitor.json)](/guidelines/readiness/)
+[Source code](https://github.com/x-tech-laboratories/X-Nix)
 
-**A network and system monitor for Linux.** X-Monitor watches your machines, homelab and small
-network from one NiceGUI dashboard, and can act on what it watches, such as restarting a systemd
-service. Hosts you control run an optional agent that streams events as they happen; routers,
-switches and appliances are monitored without one, over SSH, HTTP, DNS and ICMP.
+## X-Plymouth
 
-X-Monitor was called Vigil. Monitors are plugins, so new ones are small and easy to test, and
-results reach you through notifications, Prometheus and InfluxDB.
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Plymouth.json)](/guidelines/readiness/)
 
-[Source code](https://github.com/x-tech-laboratories/X-Monitor) · GPL-3.0-or-later ·
-[Contribute](https://github.com/x-tech-laboratories/X-Monitor/blob/main/AGENTS.md)
+**A NixOS boot splash that pulses the NixOS logo.** X-Plymouth comes in a light and a dark scheme
+that match the X-Login greeter, plus the original black and white look. The logo, its glow colour
+and the number of boot status lines can be changed.
 
-## ai-readiness
+**Status: usable.** It installs as a NixOS module, with or without flakes.
 
-[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/ai-readiness.json)](/guidelines/readiness/)
+![X-Plymouth's light scheme while the machine boots](/screenshots/x-plymouth.gif)
 
-**Scores how ready a repository is for AI-assisted development.** A command-line tool, library and
-GitHub Action that checks any public repository against the eight
-[AI Readiness Score](/guidelines/readiness/) checks and shows the evidence for each.
+[Source code](https://github.com/x-tech-laboratories/X-Plymouth)
 
-[Source code](https://github.com/x-tech-laboratories/ai-readiness) · MIT ·
-`npx github:x-tech-laboratories/ai-readiness owner/repo`
+## X-Tasks
+
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Tasks.json)](/guidelines/readiness/)
+
+**A to-do manager with projects, habits and rule tags.** Projects are tasks with tasks inside them,
+tags can follow rules, habits keep streaks, and every task keeps its history. Look at your tasks
+as a list, table, board, calendar or Gantt chart. It runs on the desktop and on Android.
+
+**Status: usable.** Installers for Linux and an Android build are released on every change.
+
+![All tasks in one list, with projects as nested tasks and tags on every row](/screenshots/x-tasks.png)
+
+[Documentation](https://x-tech-laboratories.github.io/X-Tasks/) ·
+[Source code](https://github.com/x-tech-laboratories/X-Tasks)
 
 ## Bring yours
 
