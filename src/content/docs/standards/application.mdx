@@ -299,7 +299,8 @@ Linting and types:
 Where it runs:
 
 * Local runs cover only the files changed. CI runs the whole suite.
-* CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main` and on pull requests: Node 24, `npm ci`, `npm run build`, `npm test`, `npm run lint`. X-Libs carries it:
+* CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main`, on pull requests and on `workflow_dispatch`: Node 24, `npm ci`, `npm run build`, `npm test`, `npm run lint`. X-Libs carries it.
+* An app whose flake packages npm dependencies adds an `npm-deps-hash` job calling X-Libs' `npm-deps-hash.yml`. It refreshes a stale `npmDepsHash` on a pull request, pushes it to the branch and runs CI again; on `main` it fails with the right hash. The workflow with that job:
 
 ```yaml
 name: CI
@@ -309,6 +310,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   ci:
@@ -323,6 +325,12 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run lint
+  # Refreshes a stale Nix npm deps hash on a pull request, and fails on one elsewhere.
+  npm-deps-hash:
+    uses: x-tech-laboratories/X-Libs/.github/workflows/npm-deps-hash.yml@main
+    permissions:
+      contents: write
+      actions: write
 ```
 
 Dev dependencies every repo carries for this:
@@ -394,7 +402,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Items users edit keep a history through `create_history`, shown on the History page.
 * [ ] An app that can be extended uses the X-Libs plugin host, with its bundled plugins, a Plugins section in settings and its trust note in the README.
 * [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
-* [ ] A CI workflow exists (`.github/workflows/ci.yml`).
+* [ ] A CI workflow exists (`.github/workflows/ci.yml`), with the `npm-deps-hash` job if the flake packages npm dependencies.
 * [ ] A rendered test exists for each widget the app adds.
 * [ ] No app-level copy of an X-Libs widget.
 * [ ] Commits are Conventional Commits.
