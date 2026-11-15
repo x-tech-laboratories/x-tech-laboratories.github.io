@@ -27,7 +27,8 @@ export default define_site({
 		'An open source community for extensible, interoperable software, consolidated projects, automated development and AI used in the open.',
 	site: 'https://x-tech-laboratories.github.io',
 	content: 'src/content/docs',
-	logo: './org/branding/icon/icon.svg',
+	logo: './org/branding/logo/x-tech-laboratories.svg',
+	logo_replaces_title: true,
 	favicon: '/favicon.svg',
 	social: [
 		{ icon: 'github', label: 'GitHub', href: 'https://github.com/x-tech-laboratories' },
