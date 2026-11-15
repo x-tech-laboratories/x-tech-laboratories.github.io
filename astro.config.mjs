@@ -21,7 +21,6 @@ export default defineConfig({
 				'@x-tech-laboratories/halon/starlight.css',
 				'@fontsource/noto-sans/400.css',
 				'@fontsource/noto-sans/700.css',
-				'@fontsource/rajdhani/700.css',
 				'./src/styles/theme.css',
 			],
 			sidebar: [
