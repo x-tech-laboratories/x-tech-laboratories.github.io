@@ -342,7 +342,7 @@ Dev dependencies every repo carries for this:
 
 * Pages draw their look from Halon: `halon-tokens.css` for colours, spacing and type, `halon.css` for the widget styles. An app's own `app.css` holds layout only and uses the tokens, never raw colours.
 * Light and dark themes come from the tokens and the `web/theme` choice. An app does not ship its own theme switch.
-* Colours are the [Design Guidelines](/standards/design) scheme: Baby Blue `#0088ff` and white. Fonts are Rajdhani for headings and Noto Sans for text.
+* Colours are the [Design Guidelines](/standards/design) scheme: Baby Blue `#0088ff` and white. The font is Noto Sans for all text, headings included, through Halon's tokens and bundled with the app; Rajdhani appears only in the logo.
 * Names follow the [Design Guidelines](/standards/design) naming scheme: `X-` and a hyphen, then a descriptive word (X-Backups, X-Nix). Where a hyphen is not allowed (package names, identifiers), the name is camel case (`XBackups`) or lower case with the hyphen kept (`x-backups`), as the platform allows.
 * Logos come from the `logo` folder in the [branding folder](https://github.com/x-tech-laboratories/.github/tree/main/branding) of the organisation's `.github` repository.
 * Every app has its own icon in the X-Tech style, as the [Design Guidelines](/standards/design#app-icons) set out: a glyph cut out of the X-Tech hexagon, drawn once as `resources/icon.svg`, with the desktop, Android and web icons generated from it.

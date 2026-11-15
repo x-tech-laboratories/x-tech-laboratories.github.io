@@ -1,15 +1,4 @@
-/* Colours come from Halon; the site keeps its own typefaces. */
+/* Colours come from Halon; text and headings are all Noto Sans, as the Design Guidelines ask. */
 :root {
 	--sl-font: 'Noto Sans', system-ui, sans-serif;
-}
-
-/* Headings use the logo's typeface. */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-	font-family: 'Rajdhani', var(--sl-font);
-	font-weight: 700;
 }
