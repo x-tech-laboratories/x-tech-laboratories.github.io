@@ -45,7 +45,7 @@ Rules per target:
 * A desktop app that also ships as a web app runs the same Fastify server, either in the main process or as the web build.
 * A mobile app loads the built `src/web` page in Capacitor and reaches the server over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-Libs when a second app needs them.
 * A page works at phone width, through the X-Libs `Shell` and the widgets' phone layouts.
-* Every app's sidebar ends in the same foot, drawn by the `Shell` and pinned to the sidebar's bottom while the rows above it scroll: the app's own rows, such as sync state, then the theme, then the signed-in user and Sign out, then Settings, last. None of these sits in the top bar, which holds only the brand and the app's tools.
+* Every app's sidebar ends in the same foot, drawn by the `Shell` and pinned to the sidebar's bottom while the rows above it scroll: the sync button in an app that syncs, then the app's other rows, then the theme, then the signed-in user and Sign out, then Settings, last. None of these sits in the top bar, which holds only the brand and the app's tools.
 * The server owns the app's storage, a JSON store or SQLite as the data needs; the browser page and the agent reach it only through the server.
 * A desktop or mobile app that must work offline keeps its own SQLite copy and syncs it with the server through the X-Libs sync modules; its page reaches that copy only through the app's bridge.
 * A server or an agent never shells out when a Node API does the job.
@@ -120,6 +120,7 @@ Sync:
 * The newest write of each value wins. The first time a device connects, the user chooses which copy wins, and the other is backed up before it is replaced.
 * A device keeps the server's address and token through `file_sync_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
 * The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync", where the device signs in with the user's name and password and asks before one copy replaces the other. A browser shows no sync section, since it is already on the server.
+* Every app that syncs shows `SyncButton` first in its sidebar's foot (the `Shell`'s `sidebar_foot`) on every device that syncs: whether the device is synced and how many changes wait to go out, syncing on a click, or opening the Sync settings when sync needs the user. A browser shows none, and an app does not draw its own.
 * A server whose https certificate the device refuses, such as a home server's self-signed one, is reached only after the user trusts it, through X-Libs' certificates. The dialog shows the certificate and what is wrong with it, and trusts that exact certificate for that host alone. The desktop keeps them with `create_certificate_trust`, honours them with `trust_in_session`, and sends sync through `trusting_fetch`. A phone uses `phone_certificates`, whose plugin lets the WebView through. The page passes `certificates` to `SyncSettings`, places `SyncCertificatePrompt` once, and lists `TrustedCertificates` in the Sync section. An app never turns certificate checks off, trusts a whole authority for every host, or writes its own certificate handling.
 
 Backups:
@@ -393,6 +394,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Every call has an `api_spec` entry, and the server offers `/api/openapi.json` and `/api/mcp`.
 * [ ] A Settings page in the sidebar's foot, with Users and Tokens sections for an admin, and a History page in the sidebar.
 * [ ] Data syncs through the X-Libs sync modules; data on more than one device must.
+* [ ] An app that syncs shows `SyncButton` in its sidebar's foot on every device that syncs.
 * [ ] A server with a self-signed or untrusted certificate is reached only after the user trusts it, through the X-Libs certificate modules.
 * [ ] Data is backed up daily through the X-Libs backups, before every replace, with a Backups section in settings.
 * [ ] Items users edit keep a history through `create_history`, shown on the History page.
