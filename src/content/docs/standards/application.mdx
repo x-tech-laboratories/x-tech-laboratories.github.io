@@ -41,8 +41,8 @@ Versions floor:
 
 Rules per target:
 
-* The web, desktop and mobile apps share one `src/web` React tree. The desktop app loads it in the renderer and reaches the main process through a preload bridge.
-* A desktop app that also ships as a web app runs the same Fastify server, either in the main process or as the web build.
+* The web, desktop and mobile apps share one `src/web` React tree. The desktop app loads it in the renderer and reaches its daemon through a preload bridge and the main process, as [Desktop apps](#desktop-apps-a-window-and-a-daemon) sets out.
+* A desktop app that also ships as a web app runs the same Fastify server, either in its daemon or as the web build.
 * A mobile app loads the built `src/web` page in Capacitor and reaches the server over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-Libs when a second app needs them.
 * A page works at phone width, through the X-Libs `Shell` and the widgets' phone layouts.
 * Every app's sidebar ends in the same foot, drawn by the `Shell` and pinned to the sidebar's bottom while the rows above it scroll: the sync button in an app that syncs, then the app's other rows, then the theme, then the signed-in user and Sign out, then Settings, last. None of these sits in the top bar, which holds only the brand and the app's tools.
@@ -52,13 +52,45 @@ Rules per target:
 
 Data and migrations (an app with a SQLite store):
 
-* The store is code in `src/shared` that runs unchanged on the server, in Electron's main process and in a phone's page, on the X-Libs `SqlDatabase`. It imports nothing from the DOM or from `node:` modules.
+* The store is code in `src/shared` that runs unchanged on the server, in a desktop app's daemon and in a phone's page, on the X-Libs `SqlDatabase`. It imports nothing from the DOM or from `node:` modules.
 * An app with several parts, such as a workout log and a food diary, keeps each in its own folder under `src/shared/<feature>/` with its own tables, calls and settings, and a list of features names them. Each feature's migrations are its own, run through `migrate(database, steps, { owner })`, so features change without renumbering each other's steps.
 * Tables are written once as a Drizzle schema (`schema.ts`, with the builders X-Libs re-exports). `drizzle-kit generate` writes each change as a migration, `x-libs-bundle-migrations` turns the migration folders into an `index.ts` the server, the desktop app and the phone's page all import, and `synced_tables(...)` reads the sync list, parents first, from the schema's primary keys. A released migration is never edited, only followed by a new one; data a migration only moves is made with `drizzle-kit generate --custom`.
 * Rows have ids that every device can make on its own, such as a UUID, and never an auto-incrementing key, since two devices would reuse it.
 * Queries go through `drizzle_of(database)` from X-Libs. Raw SQL is for what Drizzle does not express, such as `COLLATE NOCASE` or ordering by `rowid`.
 * The browser page imports only types from the stores, plus a small file that names the calls and the page's api, so the stores, their migrations and Drizzle stay out of the bundle a server sends. A page that needs a setting's default reads it from a plain settings file with no imports, or from the server, never from a store.
 * A call that only reads is named `list_`, `get_`, `search_`, `lookup_` or `export_`, and any other call announces a change to the other pages and devices.
+
+## Desktop apps: a window and a daemon
+
+Every desktop app runs as two processes: a daemon that does the app's work and a window that shows it. The app keeps working with its window closed, so reminders, sync, backups and timers carry on, and the window opens straight onto data that is already loaded.
+
+What each side does:
+
+* The daemon is plain Node in `src/daemon`, with no Electron in it. It owns everything that can run without a window: the store and its migrations, the sync client, backups, history, the MCP endpoint, scheduled and background work, timers, and desktop notifications.
+* The window is Electron's main process in `src/main`, its preload in `src/preload`, and the page in `src/web`. The main process keeps only what needs Electron or the screen: windows, the tray icon and menus, file dialogs, opening folders and links, the page's theme, the system's idle time, and the app's links handed over from a second launch.
+* A feature goes in the daemon unless it cannot run there. A check that runs on a timer, such as a reminder, never lives in the page or the main process.
+
+How they talk:
+
+* The daemon serves the app's calls over HTTP on a Unix socket, `$XDG_RUNTIME_DIR/<app>/daemon.sock`, readable by its user alone. These are the same calls and the same change events a server gives a browser, so one set of handlers answers the server and the daemon.
+* The main process forwards the preload bridge's calls to the socket and passes the daemon's events on to every window. The page does not know a daemon is there.
+* The daemon opens no network port of its own beyond what a feature asks for, such as the MCP endpoint on 127.0.0.1.
+* A run on a test data file uses a socket of its own, so it never reaches the user's daemon.
+
+Starting and stopping:
+
+* Opening the app starts the daemon when none is running. The daemon runs on Electron's own binary as Node (`ELECTRON_RUN_AS_NODE`), so the package ships no second runtime. Its output goes to `~/.local/state/<app>/daemon.log`.
+* One daemon runs per user and data file. A second one finds the socket answering and exits.
+* `<app> --daemon` starts only the daemon. A "Start at login" setting, on by default, writes an XDG autostart entry that runs it.
+* Closing the window ends only the window. The tray icon, where the app has one, keeps the main process open. The daemon keeps running until the user stops it from Settings or the tray, or turns off "Keep running in the background", after which it stops once the last window has closed.
+* The daemon's notifications come through X-Libs' `agent/desktop_notify`. Clicking one opens the app's link for the item, which opens the window on it.
+
+The shared pieces are in X-Libs: `local_daemon` for the socket, the calls over it, the events and starting the daemon, and `autostart` for the login entry.
+
+Other targets:
+
+* The web app's server is its daemon: it runs the same handlers and the same scheduled work.
+* A phone has no daemon. Its page does the daemon's work while it is open, and hands the operating system ahead of time whatever must happen while the app is closed, such as notifications through Capacitor's local notifications.
 
 ## APIs and MCP
 
@@ -203,7 +235,7 @@ What a plugin is:
 Where plugins come from:
 
 * Bundled plugins are added with `host.add` and need nothing else. An app's own features that others could replace, such as a video source or an importer, are written as bundled plugins.
-* Folder plugins are optional. Each subfolder of the app's plugins folder holds a `package.json` with `"type": "module"` and `"x-plugin": { "server": "dist/server.js", "web": "dist/web.js" }`, one bundled ESM file per side. The server, agent and Electron main process read them with `load_plugin_folder`; the page gets its side from `register_plugin_files` and `load_plugin_modules`, after `share_modules` has handed over the page's React.
+* Folder plugins are optional. Each subfolder of the app's plugins folder holds a `package.json` with `"type": "module"` and `"x-plugin": { "server": "dist/server.js", "web": "dist/web.js" }`, one bundled ESM file per side. The server, agent and desktop daemon read them with `load_plugin_folder`; the page gets its side from `register_plugin_files` and `load_plugin_modules`, after `share_modules` has handed over the page's React.
 * A web folder plugin is imported from a `data:` URL, so the page's Content-Security-Policy has to allow `data:` scripts for it.
 * Folder plugins run with the app's full rights and are not sandboxed. The app's README says so, and only plugins the user chose to install are loaded. An app that wants third-party plugins from strangers asks first, since that needs a sandbox X-Libs does not have.
 
@@ -235,7 +267,7 @@ tsconfig.json  tsconfig.server.json  tsconfig.web.json
 vite.config.ts
 ```
 
-* A desktop app adds `src/main` and `src/preload` and builds with `electron.vite.config.ts`. A mobile app adds `capacitor.config.json` and the generated `android/` project. A target the app does not have gets no folder.
+* A desktop app adds `src/daemon`, `src/main` and `src/preload` and builds with `electron.vite.config.ts`. A mobile app adds `capacitor.config.json` and the generated `android/` project. A target the app does not have gets no folder.
 * `tsconfig.json` holds `references` only. Each target has its own `tsconfig.<target>.json`: `server` and `agent` use the Node types; `web` uses `jsx: react-jsx`, the `DOM` lib and `vite/client`.
 * `config.example.json` is the complete, working default config. `dev:server` runs against it.
 * `nix/` holds the package and the NixOS modules. `flake.nix` exposes the package, the modules and a dev shell. `shell.nix` serves `nix-shell`.
@@ -352,12 +384,12 @@ Each app as it is today.
 | --- | --- | --- | --- |
 | X-Backups | TypeScript, Fastify 5 on X-Libs' server modules, Vite 8, React 19, on X-Libs 0.33 and Halon 0.11, released as 0.3.0 | web (Fastify + React) and agent | none |
 | X-Nix | TypeScript, Fastify 5 on X-Libs' server modules, Vite 8, React 19, on X-Libs 0.33 and Halon 0.11, released as 0.3.0 | web (Fastify + React) and agent | none |
-| X-Tasks | TypeScript 7, Vite 8, React 19 in `src/web` on X-Libs 0.11 and Halon 0.5, Fastify 5 server on X-Libs' server modules, Electron on the X-Libs window and bridge, Capacitor for Android, vitest and oxlint, released as 0.2.1 | desktop (Electron), web, mobile (Capacitor) | `dev:server`/`dev:web` scripts; `.ts` import extensions |
-| X-Music | TypeScript 7, React 19 on X-Libs 0.46 and Halon 0.17, Electron 43 on the X-Libs window and bridge, better-sqlite3 with daily backups through `sqlite_backups` and `BackupSettings`, oxlint, released as 0.1.2 | desktop (Electron) | none |
-| X-Stream | TypeScript 7, React 19 on X-Libs 0.46 and Halon 0.17, Electron on the X-Libs window, bridge, main-process fetch and streaming fetch, SQLite in the main process with `sqlite_backups` and playlist history, GPL-3.0-or-later, released as 0.2.1 | desktop (Electron) | none |
-| X-Budget | TypeScript, React 19 on X-Libs 0.35 and Halon 0.12, Electron, Capacitor for Android, Fastify server, X-Libs accounts, sync, backups (phone backups in a picked folder), history and `api_spec` with OpenAPI and MCP, vitest and oxlint, at 0.1.0 | desktop (Electron), web, mobile (Capacitor) | none |
-| X-Fitness | TypeScript, React 19 on X-Libs 0.28 and Halon 0.12, Electron, Capacitor for Android, Fastify server, X-Libs sync, vitest and oxlint, at 0.1.0 | desktop (Electron), web, mobile (Capacitor) | none |
-| CODEX | TypeScript 7, electron-vite, React 19 on X-Libs 0.46 and Halon 0.17, X-Libs bridge envelopes, node-llama-cpp, the knowledge database backed up daily by its daemon through `sqlite_backups` and `BackupSettings`, vitest and oxlint, CI, released as 0.2.1 | desktop (Electron), agent | core/daemon files still camelCase; Electron tray, autostart and sidecar helpers to move into X-Libs |
+| X-Tasks | TypeScript 7, Vite 8, React 19 in `src/web` on X-Libs 0.11 and Halon 0.5, Fastify 5 server on X-Libs' server modules, Electron on the X-Libs window and bridge, Capacitor for Android, vitest and oxlint, released as 0.2.1 | desktop (Electron), web, mobile (Capacitor) | `dev:server`/`dev:web` scripts; `.ts` import extensions; split into a window and a daemon |
+| X-Music | TypeScript 7, React 19 on X-Libs 0.46 and Halon 0.17, Electron 43 on the X-Libs window and bridge, better-sqlite3 with daily backups through `sqlite_backups` and `BackupSettings`, oxlint, released as 0.1.2 | desktop (Electron) | split into a window and a daemon |
+| X-Stream | TypeScript 7, React 19 on X-Libs 0.46 and Halon 0.17, Electron on the X-Libs window, bridge, main-process fetch and streaming fetch, SQLite in the main process with `sqlite_backups` and playlist history, GPL-3.0-or-later, released as 0.2.1 | desktop (Electron) | split into a window and a daemon |
+| X-Budget | TypeScript, React 19 on X-Libs 0.35 and Halon 0.12, Electron, Capacitor for Android, Fastify server, X-Libs accounts, sync, backups (phone backups in a picked folder), history and `api_spec` with OpenAPI and MCP, vitest and oxlint, at 0.1.0 | desktop (Electron), web, mobile (Capacitor) | split into a window and a daemon |
+| X-Fitness | TypeScript, React 19 on X-Libs 0.28 and Halon 0.12, Electron, Capacitor for Android, Fastify server, X-Libs sync, vitest and oxlint, at 0.1.0 | desktop (Electron), web, mobile (Capacitor) | split into a window and a daemon |
+| CODEX | TypeScript 7, electron-vite, React 19 on X-Libs 0.46 and Halon 0.17, X-Libs bridge envelopes, node-llama-cpp, the knowledge database backed up daily by its daemon through `sqlite_backups` and `BackupSettings`, vitest and oxlint, CI, released as 0.2.1 | desktop (Electron), agent | core/daemon files still camelCase; its JSON-lines socket onto the daemon's HTTP calls; Electron tray, autostart and sidecar helpers to move into X-Libs |
 | RoboBuddy | TypeScript library, `tsc` and `build.mjs`, no runtime deps | library | oxlint; otherwise in line |
 | ai-readiness | JavaScript with Node's test runner, Prettier, Node 20, MIT | CLI | TypeScript; Node 24; oxlint and vitest; GPL-3.0-or-later |
 | X-Libs | TypeScript library, ESM, React widgets, Fastify server modules (token sign-in, sign-in guard, event stream, web folder, replies, config, CORS); shortcuts, dates, trees, prefs, selection, virtual windows, logging, backups, media tiles, list picker, page view, progress, rating, volume, following output, Markdown, suggestions, status pill, path input, stores; Electron app, bridge with envelopes, events, fetch and streaming fetch, window helpers; table on TanStack with virtualization | library | facet pane, entity merge grid, name-and-password sign-in, forge webhook verification, Electron tray/autostart/sidecar, number field, yes/no-with-note dialog, empty-label table column id fallback |
@@ -384,7 +416,8 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] `resources/icon.svg` is an X-Tech style icon, and the desktop, Android and web icons are generated from it.
 * [ ] Repo has `LICENSE` (GPL-3.0-or-later), `README.md`, `flake.nix`, `shell.nix`.
 * [ ] `package.json`: `"engines": { "node": ">=24" }`, `"license": "GPL-3.0-or-later"`, ESM.
-* [ ] Layout is `src/server|web|agent|shared` (or `src/main|preload|web` for desktop), plus `tests/`, `docs/`, `nix/`.
+* [ ] Layout is `src/server|web|agent|shared` (or `src/daemon|main|preload|web` for desktop), plus `tests/`, `docs/`, `nix/`.
+* [ ] A desktop app runs as a daemon and a window over the daemon's socket, keeps working with the window closed, and starts at login.
 * [ ] `tsconfig.json` references one config per target, each with the strict flags from `tsconfig.base.json`.
 * [ ] Scripts `dev:server`, `dev:web`, `build`, `start`, `test`, `lint` exist and use the standard commands.
 * [ ] `config.example.json` runs the app as it stands.
