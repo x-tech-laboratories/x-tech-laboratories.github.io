@@ -284,6 +284,7 @@ Script names, the same in every app:
 | `start`       | `NODE_ENV=production node src/server/main.ts`              |
 | `typecheck`   | `tsc -b --noEmit` or per target (optional)                 |
 | `test`        | `vitest run`                                               |
+| `coverage`    | `vitest run --coverage`                                    |
 | `lint`        | `oxlint`                                                   |
 | `db:generate` | `drizzle-kit generate` for every feature, then `x-libs-bundle-migrations` (apps with a Drizzle store) |
 
@@ -329,10 +330,37 @@ Linting and types:
 * A rule override goes in `.oxlintrc.json` with a one-line reason each.
 * `tsc -b` (or the repo's `typecheck` script) is part of `build` and runs in CI.
 
+Coverage:
+
+* Every repo, app or library, measures test coverage with `@vitest/coverage-v8`, and CI checks it on every pull request.
+* The coverage floor is `coverage.thresholds` in `vitest.config.ts`: lines, statements, functions and branches. A run below the floor fails.
+* The floor only rises. Once coverage passes it, the higher value is the new floor, committed with the change that reached it. The floor is never lowered, and code is never excluded from coverage to stay above it.
+* All work raises coverage over time: new code comes with tests, and a change to untested code adds tests for it.
+* `autoUpdate` keeps the floor at the whole percent the suite reaches, so `npm run coverage` writes the new floor into `vitest.config.ts`.
+* A new repo sets its first floor from its first measured run.
+* A repo outside the TypeScript stack follows the same rule with its language's coverage tool, its floor kept in the repo.
+
+```ts
+test: {
+  coverage: {
+    provider: 'v8',
+    include: ['src/**'],
+    thresholds: {
+      autoUpdate: (new_threshold) => Math.floor(new_threshold),
+      lines: 0,
+      statements: 0,
+      functions: 0,
+      branches: 0,
+    },
+  },
+},
+```
+
 Where it runs:
 
-* Local runs cover only the files changed. CI runs the whole suite.
-* CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main`, on pull requests and on `workflow_dispatch`: Node 24, `npm ci`, `npm run build`, `npm test`, `npm run lint`. X-Libs carries it.
+* Local runs cover only the files changed, plus one `npm run coverage` before a pull request to commit a raised floor. CI runs the whole suite.
+* CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main`, on pull requests and on `workflow_dispatch`: Node 24, `npm ci`, `npm run build`, `npm run coverage`, a check that the floor in `vitest.config.ts` is committed, `npm run lint`. X-Libs carries it.
+* A pull request fails when coverage drops below the floor, and when it raises coverage past the floor without committing the new one.
 * An app whose flake packages npm dependencies builds them with nixpkgs' `importNpmLock` (`npmDeps = importNpmLock { npmRoot = ../.; }` and `npmConfigHook = importNpmLock.npmConfigHook`), so there is no `npmDepsHash` to keep in step with `package-lock.json`.
 
 The workflow:
@@ -358,13 +386,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npm test
+      - run: npm run coverage
+      - run: git diff --exit-code vitest.config.ts
       - run: npm run lint
 ```
 
 Dev dependencies every repo carries for this:
 
-* `vitest`, `oxlint` and `typescript`.
+* `vitest`, `@vitest/coverage-v8`, `oxlint` and `typescript`.
 * For repos with widgets, also `jsdom`, `@testing-library/react` and `@testing-library/dom`.
 
 ## Styling and branding
@@ -419,7 +448,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Layout is `src/server|web|agent|shared` (or `src/daemon|main|preload|web` for desktop), plus `tests/`, `docs/`, `nix/`.
 * [ ] A desktop app runs as a daemon and a window over the daemon's socket, keeps working with the window closed, and starts at login.
 * [ ] `tsconfig.json` references one config per target, each with the strict flags from `tsconfig.base.json`.
-* [ ] Scripts `dev:server`, `dev:web`, `build`, `start`, `test`, `lint` exist and use the standard commands.
+* [ ] Scripts `dev:server`, `dev:web`, `build`, `start`, `test`, `coverage`, `lint` exist and use the standard commands.
 * [ ] `config.example.json` runs the app as it stands.
 * [ ] Depends on `@x-tech-laboratories/x-libs` and `@x-tech-laboratories/halon`; no re-implemented sign-in, agent, formatting, widget or theme code.
 * [ ] Imports Halon's tokens and stylesheet once; `app.css` holds layout only.
@@ -433,7 +462,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Items users edit keep a history through `create_history`, shown on the History page.
 * [ ] An app that can be extended uses the X-Libs plugin host, with its bundled plugins, a Plugins section in settings and its trust note in the README.
 * [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
-* [ ] A CI workflow exists (`.github/workflows/ci.yml`), and a flake that packages npm dependencies reads them with `importNpmLock`.
+* [ ] A CI workflow exists (`.github/workflows/ci.yml`) and checks coverage against a floor in `vitest.config.ts` that only rises, and a flake that packages npm dependencies reads them with `importNpmLock`.
 * [ ] A rendered test exists for each widget the app adds.
 * [ ] No app-level copy of an X-Libs widget.
 * [ ] Commits are Conventional Commits.
