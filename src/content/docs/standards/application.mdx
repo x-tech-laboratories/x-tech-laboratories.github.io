@@ -24,7 +24,8 @@ How X-Tech applications are built. Every app follows it where possible, so the s
 
 | Target          | Stack                                                                                  |
 | --------------- | -------------------------------------------------------------------------------------- |
-| Web app         | React page bundled by Vite, served by a Fastify server                                 |
+| Daemon          | Node program in TypeScript on Fastify, holding all of the app's work                   |
+| Web app         | React page bundled by Vite, served by the daemon                                       |
 | Desktop app     | Electron built with electron-vite, wrapping the same React UI                          |
 | Mobile app      | Capacitor, wrapping the same React UI                                                  |
 | CLI and agent   | Node script in TypeScript, built on the X-Libs `agent` modules                         |
@@ -42,18 +43,17 @@ Versions floor:
 
 Rules per target:
 
-* The web, desktop and mobile apps share one `src/web` React tree. The desktop app loads it in the renderer and reaches its daemon through a preload bridge and the main process, as [Daemon and UI](#daemon-and-ui) sets out.
-* A desktop app that also ships as a web app runs the same Fastify server, either in its daemon or as the web build.
-* A mobile app loads the built `src/web` page in Capacitor and reaches the server over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-Libs when a second app needs them.
+* The web, desktop and mobile apps share one `src/web` React tree, and each is a UI onto a daemon, as [Daemon and UI](#daemon-and-ui) sets out. The desktop app loads the tree in the renderer and reaches a daemon through a preload bridge and the main process.
+* A mobile app loads the built `src/web` page in Capacitor and reaches a daemon over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-Libs when a second app needs them.
 * A page works at phone width, through the X-Libs `Shell` and the widgets' phone layouts.
 * Every app's sidebar ends in the same foot, drawn by the `Shell` and pinned to the sidebar's bottom while the rows above it scroll: the sync button in an app that syncs, then the app's other rows, then the theme, then the signed-in user and Sign out, then Settings, last. None of these sits in the top bar, which holds only the brand and the app's tools.
-* The server owns the app's storage, a JSON store or SQLite as the data needs; the browser page and the agent reach it only through the server.
-* A desktop or mobile app that must work offline keeps its own SQLite copy and syncs it with the server through the X-Libs sync modules; its page reaches that copy only through the app's bridge.
-* A server or an agent never shells out when a Node API does the job.
+* The daemon owns the app's storage, a JSON store or SQLite as the data needs; every UI and agent reaches it only through a daemon.
+* A phone app that must work offline keeps its own SQLite copy and syncs it with a daemon through the X-Libs sync modules; its page reaches that copy only through the app's bridge.
+* A daemon or an agent never shells out when a Node API does the job.
 
 Data and migrations (an app with a SQLite store):
 
-* The store is code in `src/shared` that runs unchanged on the server, in a desktop app's daemon and in a phone's page, on the X-Libs `SqlDatabase`. It imports nothing from the DOM or from `node:` modules.
+* The store is code in `src/shared` that runs unchanged in the daemon and in a phone's page, on the X-Libs `SqlDatabase`. It imports nothing from the DOM or from `node:` modules.
 * An app with several parts, such as a workout log and a food diary, keeps each in its own folder under `src/shared/<feature>/` with its own tables, calls and settings, and a list of features names them. Each feature's migrations are its own, run through `migrate(database, steps, { owner })`, so features change without renumbering each other's steps.
 * Tables are written once as a Drizzle schema (`schema.ts`, with the builders X-Libs re-exports). `drizzle-kit generate` writes each change as a migration, `x-libs-bundle-migrations` turns the migration folders into an `index.ts` the server, the desktop app and the phone's page all import, and `synced_tables(...)` reads the sync list, parents first, from the schema's primary keys. A released migration is never edited, only followed by a new one; data a migration only moves is made with `drizzle-kit generate --custom`.
 * Rows have ids that every device can make on its own, such as a UUID, and never an auto-incrementing key, since two devices would reuse it.
@@ -66,32 +66,43 @@ Data and migrations (an app with a SQLite store):
 Every app reaches its users wherever they are, from one codebase:
 
 * Every app with a UI ships on the web, on the Linux desktop through Electron and on Android through Capacitor, all drawing the one `src/web` React tree. No target has a page or a feature of its own that the others could have.
-* A web app that manages other machines, such as X-Backups or X-Nix, still ships desktop and Android apps that reach its server, so the page is never only in a browser tab.
+* An app whose daemon belongs on one host, such as X-Backups or X-Nix, still ships desktop and Android apps, as portals onto that daemon, so the page is never only in a browser tab.
 * A target the app leaves out is written down in its `README.md` with the hard limit that rules it out, such as a player that needs `mpv` on the machine it runs on.
 
 ## Daemon and UI
 
-Every app runs as two parts: a daemon that does the app's work and a UI that shows it. The app keeps working with its UI closed, so reminders, sync, backups, notifications and timers carry on, and the UI opens straight onto data that is already loaded.
+Every app is one daemon that holds all of its work, with the web, desktop and Android apps as UIs onto it. A daemon runs on any host, and a UI connects to the daemon on its own machine or to one on another, so the same app serves one laptop or a whole household from a home server. The app keeps working with every UI closed: reminders, sync, backups, notifications and timers carry on, and a UI opens straight onto data that is already loaded.
 
-* The web app's daemon is its server. The desktop app's daemon is a process of its own, set out below. A phone has none, set out under Other targets.
-* Work that runs on a timer or in the background never lives in the page, on any target.
+The daemon:
 
-Desktop apps run their daemon beside the window. What each side does:
+* The daemon is one plain Node program in `src/server`, with no Electron in it. It owns everything that can run without a screen: the store and its migrations, accounts, the API and MCP, sync, backups, history, plugins, notifications, and scheduled and background work.
+* A feature goes in the daemon unless it cannot run there. Work that runs on a timer, such as a reminder, never lives in a UI.
+* It serves the web page, the app's calls and their change events, `/api/openapi.json` and `/api/mcp`. One set of handlers answers every UI, wherever it runs.
+* On a server it runs headless, from the app's NixOS module or `npm start`, listening on a network address behind the X-Libs sign-in, over https or behind a reverse proxy.
+* On a desktop it runs as the app's local daemon, set out below.
 
-* The daemon is plain Node in `src/daemon`, with no Electron in it. It owns everything that can run without a window: the store and its migrations, the sync client, backups, history, the MCP endpoint, scheduled and background work, timers, and desktop notifications.
-* The window is Electron's main process in `src/main`, its preload in `src/preload`, and the page in `src/web`. The main process keeps only what needs Electron or the screen: windows, the tray icon and menus, file dialogs, opening folders and links, the page's theme, the system's idle time, and the app's links handed over from a second launch.
-* A feature goes in the daemon unless it cannot run there. A check that runs on a timer, such as a reminder, never lives in the page or the main process.
+The UIs:
 
-How they talk:
+* The web page is served by the daemon and talks to that daemon.
+* The desktop app is Electron's main process in `src/main`, its preload in `src/preload`, and the page in `src/web`. The main process keeps only what needs Electron or the screen: windows, the tray icon and menus, file dialogs, opening folders and links, the page's theme, the system's idle time, the app's links handed over from a second launch, and showing the daemon's notifications.
+* The desktop and Android apps share one list of daemons to connect to, the way Deluge's connection manager does: "This computer" for the local daemon, and remote daemons by address, each signed in with the user's name and password and given a token of its own named for the device. A UI opens on the daemon it used last, and the user switches daemons from Settings.
+* The main process forwards the preload bridge's calls to the chosen daemon, over its socket or over https, and passes the daemon's events on to every window. The page does not know where its daemon runs.
+* An Android app connects only to remote daemons, since Android cannot keep a Node daemon running. A phone app that must work offline keeps its own copy and syncs it with a daemon, doing the daemon's work while it is open and handing the operating system ahead of time whatever must happen while it is closed, such as notifications through Capacitor's local notifications.
 
-* The daemon serves the app's calls over HTTP on a Unix socket, `$XDG_RUNTIME_DIR/<app>/daemon.sock`, readable by its user alone. These are the same calls and the same change events a server gives a browser, so one set of handlers answers the server and the daemon.
-* The main process forwards the preload bridge's calls to the socket and passes the daemon's events on to every window. The page does not know a daemon is there.
-* The daemon opens no network port of its own beyond what a feature asks for, such as the MCP endpoint on 127.0.0.1.
+Portals and personal apps:
+
+* An app whose daemon belongs on one host, such as X-Nix, X-Backups or X-Monitor, which manage other machines, offers no "This computer": its desktop and Android apps are portals onto a remote daemon and never run one of their own.
+* A personal app, such as X-Tasks, X-Fitness, X-Budget or X-Media-Tracker, offers "This computer". Its local daemon can sync with a remote daemon through the X-Libs sync modules, so a laptop keeps working offline and catches up when it reconnects.
+
+How a local daemon talks:
+
+* It serves the same calls over HTTP on a Unix socket, `$XDG_RUNTIME_DIR/<app>/daemon.sock`, readable by its user alone, so a UI on the same machine needs no sign-in.
+* It opens no network port unless the user turns on "Let other devices connect" in Settings, after which it listens like a server daemon, behind the same sign-in. The MCP endpoint on 127.0.0.1 is likewise a setting.
 * A run on a test data file uses a socket of its own, so it never reaches the user's daemon.
 
-Starting and stopping:
+Starting and stopping a local daemon:
 
-* Opening the app starts the daemon when none is running. The daemon runs on Electron's own binary as Node (`ELECTRON_RUN_AS_NODE`), so the package ships no second runtime. Its output goes to `~/.local/state/<app>/daemon.log`.
+* Opening the app starts the local daemon when "This computer" is chosen and none is running. The daemon runs on Electron's own binary as Node (`ELECTRON_RUN_AS_NODE`), so the package ships no second runtime. Its output goes to `~/.local/state/<app>/daemon.log`.
 * One daemon runs per user and data file. A second one finds the socket answering and exits.
 * `<app> --daemon` starts only the daemon. A "Start at login" setting, on by default, writes an XDG autostart entry that runs it.
 * Closing the window ends only the window. The tray icon, where the app has one, keeps the main process open. The daemon keeps running until the user stops it from Settings or the tray, or turns off "Keep running in the background", after which it stops once the last window has closed.
@@ -99,14 +110,9 @@ Starting and stopping:
 
 The shared pieces are in X-Libs: `local_daemon` for the socket, the calls over it, the events and starting the daemon, `server/call_table` for serving a table of calls on it, `autostart` for the login entry, `electron/tray` for the tray icon, and `agent/scheduled_notices` for reminders due at set moments.
 
-Other targets:
-
-* The web app's server runs the same handlers and the same scheduled work as the desktop daemon.
-* A phone has no daemon. Its page does the daemon's work while it is open, and hands the operating system ahead of time whatever must happen while the app is closed, such as notifications through Capacitor's local notifications.
-
 ## APIs and MCP
 
-Other programs reach an app's data as well as its own page does, so it can be scripted, linked to other tools and used by an AI client. Wherever an app has a server:
+Other programs reach an app's data as well as its own page does, so it can be scripted, linked to other tools and used by an AI client. Every daemon:
 
 * Every call the page makes is open to other programs through the server's API, behind the same sign-in. A program sends a token made on the user's account page as a bearer header.
 * Every call is described once in an X-Libs `api_spec`: what it does in plain words, and a JSON Schema for each argument. The spec is typed against the app's method table, so a call without one fails to compile.
@@ -117,7 +123,7 @@ Other programs reach an app's data as well as its own page does, so it can be sc
 * A call that only reads is named so (`list_`, `get_`, `search_` and the like) and is marked read-only to MCP clients. A change made through the API or MCP reaches open pages and devices as if made in the app.
 * Values cross the API in the units the app stores, and the spec says which.
 * What the API returns leaves out keys and passwords for other services.
-* An app without a server, such as a desktop-only app, offers MCP where its host allows, or writes down in its `README.md` why it cannot.
+* A local daemon that opens no network port offers MCP on 127.0.0.1 when the user turns it on.
 
 ## Accounts and signing in
 
@@ -161,10 +167,10 @@ Settings:
 
 Sync:
 
-* Every app syncs, so its data is the same on its server and on every device, and each device keeps working offline on its own copy. It syncs through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the server and `create_sync_client` on each device. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
+* Every copy of an app's data syncs: a local daemon with a remote daemon, and a phone's offline copy with a daemon, so the data is the same everywhere and each copy keeps working offline. A portal app, whose one daemon is the only copy, has nothing to sync. Sync goes through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the daemon others sync with, and `create_sync_client` on each local daemon or phone. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
 * The newest write of each value wins. The first time a device connects, the user chooses which copy wins, and the other is backed up before it is replaced.
 * A device keeps the server's address and token through `file_sync_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
-* The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync", where the device signs in with the user's name and password and asks before one copy replaces the other. A browser shows no sync section, since it is already on the server.
+* The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync", where the device signs in with the user's name and password and asks before one copy replaces the other. A browser shows no sync section, since it is already on the daemon.
 * Every app that syncs shows `SyncButton` first in its sidebar's foot (the `Shell`'s `sidebar_foot`) on every device that syncs: whether the device is synced and how many changes wait to go out, syncing on a click, or opening the Sync settings when sync needs the user. It is always shown: while sync is not set up its label says "Sync not set up" and a click opens the Sync settings. A browser shows none, and an app does not draw its own.
 * A server whose https certificate the device refuses, such as a home server's self-signed one, is reached only after the user trusts it, through X-Libs' certificates. The dialog shows the certificate and what is wrong with it, and trusts that exact certificate for that host alone. The desktop keeps them with `create_certificate_trust`, honours them with `trust_in_session`, and sends sync through `trusting_fetch`. A phone uses `phone_certificates`, whose plugin lets the WebView through. The page passes `certificates` to `SyncSettings`, places `SyncCertificatePrompt` once, and lists `TrustedCertificates` in the Sync section. An app never turns certificate checks off, trusts a whole authority for every host, or writes its own certificate handling.
 
@@ -275,7 +281,7 @@ Every app tells its user what they need to know while it is not in front of them
 Where notifications come from:
 
 * The daemon or the server decides when to notify, never the page, so notifications arrive with every window closed.
-* On the desktop, the daemon shows them through X-Libs' `agent/desktop_notify`. Clicking one opens the app's link for the item, which opens the window on it.
+* On the desktop they are shown through X-Libs' `agent/desktop_notify`: by the local daemon, or by the desktop app's main process for a remote daemon it is connected to. Clicking one opens the app's link for the item, which opens the window on it.
 * On a phone, the page hands them to the operating system ahead of time through Capacitor's local notifications, wrapped in X-Libs, so they arrive while the app is closed.
 * A server sends them through the channels of X-Libs' `server/notify`: ntfy, a webhook, mail and Apprise. A channel's password or token is read from a file, never kept in the app's settings.
 * A notification about an item has a key, so a newer one about the same item replaces the old one instead of piling up.
@@ -309,7 +315,7 @@ tsconfig.json  tsconfig.server.json  tsconfig.web.json
 vite.config.ts
 ```
 
-* A desktop app adds `src/daemon`, `src/main` and `src/preload` and builds with `electron.vite.config.ts`. A mobile app adds `capacitor.config.json` and the generated `android/` project. A target the app does not have gets no folder.
+* A desktop app adds `src/main` and `src/preload` and builds with `electron.vite.config.ts`; its local daemon is the same `src/server` program. A mobile app adds `capacitor.config.json` and the generated `android/` project. A target the app does not have gets no folder.
 * `tsconfig.json` holds `references` only. Each target has its own `tsconfig.<target>.json`: `server` and `agent` use the Node types; `web` uses `jsx: react-jsx`, the `DOM` lib and `vite/client`.
 * `config.example.json` is the complete, working default config. `dev:server` runs against it.
 * `nix/` holds the package and the NixOS modules. `flake.nix` exposes the package, the modules and a dev shell. `shell.nix` serves `nix-shell`.
@@ -495,9 +501,9 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] `resources/icon.svg` is an X-Tech style icon, and the desktop, Android and web icons are generated from it.
 * [ ] Repo has `LICENSE` (GPL-3.0-or-later), `README.md`, `flake.nix`, `shell.nix`.
 * [ ] `package.json`: `"engines": { "node": ">=24" }`, `"license": "GPL-3.0-or-later"`, ESM.
-* [ ] Layout is `src/server|web|agent|shared` (or `src/daemon|main|preload|web` for desktop), plus `tests/`, `docs/`, `nix/`.
+* [ ] Layout is `src/server|web|agent|shared`, plus `src/main|preload` for desktop, `tests/`, `docs/`, `nix/`.
 * [ ] The app ships on the web, the desktop and Android from one `src/web` tree, or its `README.md` names the limit that rules a target out.
-* [ ] The app's work runs in a daemon apart from its UI: the server on the web, and on the desktop a daemon over its socket that keeps working with the window closed and starts at login.
+* [ ] All of the app's work runs in one daemon that runs on any host; the web, desktop and Android apps are UIs that connect to a local or a remote daemon, and a portal app's UIs connect only to a remote one.
 * [ ] `tsconfig.json` references one config per target, each with the strict flags from `tsconfig.base.json`.
 * [ ] Scripts `dev:server`, `dev:web`, `build`, `start`, `test`, `coverage`, `lint` exist and use the standard commands.
 * [ ] `config.example.json` runs the app as it stands.

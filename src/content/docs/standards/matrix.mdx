@@ -7,19 +7,19 @@ sidebar:
 Which parts of the [Application Standard](/standards/application) each X-Tech app meets today, read
 from each app's code on its `main` branch. Each column links to the part of the standard it checks.
 
-✅ meets it · 🟡 meets part of it · ❌ does not meet it yet · ➖ does not apply, with the reason written in the app's README
+✅ meets it · 🟡 meets part of it · ❌ does not meet it yet · ➖ does not apply to the app
 
 | App | [Stack](/standards/application#stack-per-target) | [Daemon + UI](/standards/application#daemon-and-ui) | [Platforms](/standards/application#platforms) | [API + MCP](/standards/application#apis-and-mcp) | [Accounts](/standards/application#accounts-and-signing-in) | [Settings](/standards/application#settings-sync-backups-and-history) | [Sync](/standards/application#settings-sync-backups-and-history) | [Backups](/standards/application#settings-sync-backups-and-history) | [History](/standards/application#settings-sync-backups-and-history) | [Import + Export](/standards/application#settings-sync-backups-and-history) | [Plugins](/standards/application#plugins) | [Notifications](/standards/application#notifications) | [CI/CD](/standards/application#testing-ci-and-delivery) | [Coverage floor](/standards/application#testing-ci-and-delivery) | [Branding](/standards/application#styling-and-branding) |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| <span style={{ whiteSpace: "nowrap" }}>X-Backups</span> | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟡 | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Backups</span> | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟡 | ➖ | ✅ | ❌ | ❌ | ❌ | ❌ | 🟡 | ❌ | ✅ |
 | <span style={{ whiteSpace: "nowrap" }}>X-Budget</span> | ✅ | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ❌ | ❌ | 🟡 | ❌ | ✅ |
-| <span style={{ whiteSpace: "nowrap" }}>X-Fitness</span> | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ❌ | ❌ | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Fitness</span> | ✅ | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ❌ | ❌ | 🟡 | ❌ | ✅ |
 | <span style={{ whiteSpace: "nowrap" }}>X-Media-Tracker</span> | ✅ | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | 🟡 | ❌ | ✅ |
 | <span style={{ whiteSpace: "nowrap" }}>X-Monitor</span> | ✅ | ✅ | 🟡 | ✅ | ✅ | 🟡 | 🟡 | ✅ | ❌ | ❌ | ✅ | ✅ | 🟡 | ❌ | ✅ |
 | <span style={{ whiteSpace: "nowrap" }}>X-Music</span> | ✅ | ❌ | ✅ | ✅ | ➖ | ✅ | ➖ | ✅ | ✅ | ❌ | ❌ | ❌ | 🟡 | 🟡 | ✅ |
-| <span style={{ whiteSpace: "nowrap" }}>X-Nix</span> | ✅ | ✅ | 🟡 | 🟡 | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | 🟡 | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Nix</span> | ✅ | ✅ | 🟡 | 🟡 | ✅ | ✅ | ➖ | ✅ | ❌ | ❌ | ❌ | 🟡 | 🟡 | ❌ | ✅ |
 | <span style={{ whiteSpace: "nowrap" }}>X-Stream</span> | 🟡 | ❌ | 🟡 | ❌ | ➖ | ✅ | ➖ | ✅ | 🟡 | ❌ | ✅ | ❌ | 🟡 | ❌ | ✅ |
-| <span style={{ whiteSpace: "nowrap" }}>X-Tasks</span> | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ❌ | 🟡 | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Tasks</span> | ✅ | 🟡 | ✅ | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ❌ | 🟡 | 🟡 | ❌ | ✅ |
 | <span style={{ whiteSpace: "nowrap" }}>CODEX</span> | 🟡 | 🟡 | 🟡 | ❌ | ➖ | 🟡 | ❌ | ✅ | ❌ | ❌ | ❌ | 🟡 | 🟡 | ❌ | 🟡 |
 
 Every app's CI builds, tests and lints each pull request, but none publishes releases from a version tag yet, so CI/CD is partly met everywhere; X-Tasks comes closest, building its Android and desktop packages on every push. No app's CI checks a coverage floor yet.
@@ -35,22 +35,23 @@ ai-readiness, MOSAIC, X-Login and X-Plymouth.
 - Platforms: web only; no desktop or Android app.
 - API + MCP: MCP is served, `/api/openapi.json` is not.
 - Settings: configuration views, but no `SettingsPage` in the sidebar's foot.
-- Sync, History, Import + Export, Plugins, Notifications: not started.
+- History, Import + Export, Plugins, Notifications: not started.
 
 ### X-Budget
 
-- Daemon + UI: the desktop app keeps its store in Electron's main process, with no daemon.
+- Daemon + UI: the server is its daemon, but the desktop app keeps its own store in Electron's main process instead of connecting to a local or remote daemon.
 - Import + Export: each budget exports and imports as JSON; no CSV and no settings file.
 - Plugins, Notifications: not started.
 
 ### X-Fitness
 
+- Daemon + UI: the desktop's local daemon and the server are separate programs, and the desktop app cannot connect to a remote daemon.
 - Import + Export: imports Liftosaur's files only; nothing of its own exports.
 - Plugins, Notifications: not started.
 
 ### X-Media-Tracker
 
-- Daemon + UI: the desktop app keeps its store in Electron's main process, with no daemon.
+- Daemon + UI: the server is its daemon, but the desktop app keeps its own store in Electron's main process instead of connecting to a local or remote daemon.
 - Notifications: book alerts go out through ntfy, a webhook and mail; no desktop or phone
   notifications and no Notifications settings section.
 
@@ -74,7 +75,7 @@ ai-readiness, MOSAIC, X-Login and X-Plymouth.
 
 - Platforms: web only; no desktop or Android app.
 - API + MCP: MCP is served, `/api/openapi.json` is not.
-- Sync, History, Import + Export, Plugins: not started.
+- History, Import + Export, Plugins: not started.
 - Notifications: sent through ntfy, a webhook and Apprise, with no Notifications settings section.
 
 ### X-Stream
@@ -89,6 +90,7 @@ ai-readiness, MOSAIC, X-Login and X-Plymouth.
 
 ### X-Tasks
 
+- Daemon + UI: the desktop's local daemon and the server are separate programs, and the desktop app cannot connect to a remote daemon.
 - API + MCP: its own MCP server on a port of its own, not `api_spec`, and no `/api/openapi.json`.
 - Import + Export: the worklog saves to a file; nothing else exports or imports.
 - Plugins: not started.
