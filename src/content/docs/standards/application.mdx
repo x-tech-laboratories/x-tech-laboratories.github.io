@@ -144,7 +144,8 @@ An app's data is kept the same way in every app, so users get the same safety ev
 
 Settings:
 
-* Every app has a Settings page, the last row of the sidebar's foot (the `Shell`'s `settings`), drawn with `SettingsPage`: each feature's own sections, then those of Sync, Backups and Plugins below, and for an admin on the server Users and Tokens. An app keeps no settings anywhere else, such as in a dialog or on a page of their own.
+* Every app has a Settings page, the last row of the sidebar's foot (the `Shell`'s `settings`), drawn with `SettingsPage`: each feature's own sections, then those of Sync, Backups and Plugins below, and for an admin on the server Users and Tokens. An app keeps no settings anywhere else, such as on a page of their own or in a dialog opened from outside the Settings page.
+* A section that grows too cluttered to scan, such as one listing many sources, accounts or services each with its own keys, switches and actions, moves each group's controls into its own dialog opened from the Settings page. The section keeps one row per group: its name, a short status such as "Signed in" or "No key", and a button that opens the dialog. Each dialog holds every setting and action of that group and nothing else.
 
 Sync:
 
