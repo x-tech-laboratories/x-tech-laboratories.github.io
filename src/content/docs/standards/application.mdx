@@ -10,6 +10,7 @@ How X-Tech applications are built. Every app follows it where possible, so the s
 
 * Every X-Tech app is written in TypeScript on Node with React.
 * The web app is the primary target. Desktop and mobile wrap the same React page, so every target shows the same X-Libs widgets.
+* Every app runs on the web, the desktop and Android, does its work in a daemon apart from its UI, syncs, takes plugins, notifies its user, imports and exports its data and settings, and is tested and released by CI against a coverage floor that only rises, as the sections below set out.
 * One widget set, one agent and server stack and one toolchain are shared across apps. This is what lets X-Libs be used in full.
 * The standard covers new apps and rewrites. An existing app moves over in the order given under Current state.
 * Exceptions stay as they are until they are rewritten:
@@ -41,7 +42,7 @@ Versions floor:
 
 Rules per target:
 
-* The web, desktop and mobile apps share one `src/web` React tree. The desktop app loads it in the renderer and reaches its daemon through a preload bridge and the main process, as [Desktop apps](#desktop-apps-a-window-and-a-daemon) sets out.
+* The web, desktop and mobile apps share one `src/web` React tree. The desktop app loads it in the renderer and reaches its daemon through a preload bridge and the main process, as [Daemon and UI](#daemon-and-ui) sets out.
 * A desktop app that also ships as a web app runs the same Fastify server, either in its daemon or as the web build.
 * A mobile app loads the built `src/web` page in Capacitor and reaches the server over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-Libs when a second app needs them.
 * A page works at phone width, through the X-Libs `Shell` and the widgets' phone layouts.
@@ -60,11 +61,22 @@ Data and migrations (an app with a SQLite store):
 * The browser page imports only types from the stores, plus a small file that names the calls and the page's api, so the stores, their migrations and Drizzle stay out of the bundle a server sends. A page that needs a setting's default reads it from a plain settings file with no imports, or from the server, never from a store.
 * A call that only reads is named `list_`, `get_`, `search_`, `lookup_` or `export_`, and any other call announces a change to the other pages and devices.
 
-## Desktop apps: a window and a daemon
+## Platforms
 
-Every desktop app runs as two processes: a daemon that does the app's work and a window that shows it. The app keeps working with its window closed, so reminders, sync, backups and timers carry on, and the window opens straight onto data that is already loaded.
+Every app reaches its users wherever they are, from one codebase:
 
-What each side does:
+* Every app with a UI ships on the web, on the Linux desktop through Electron and on Android through Capacitor, all drawing the one `src/web` React tree. No target has a page or a feature of its own that the others could have.
+* A web app that manages other machines, such as X-Backups or X-Nix, still ships desktop and Android apps that reach its server, so the page is never only in a browser tab.
+* A target the app leaves out is written down in its `README.md` with the hard limit that rules it out, such as a player that needs `mpv` on the machine it runs on.
+
+## Daemon and UI
+
+Every app runs as two parts: a daemon that does the app's work and a UI that shows it. The app keeps working with its UI closed, so reminders, sync, backups, notifications and timers carry on, and the UI opens straight onto data that is already loaded.
+
+* The web app's daemon is its server. The desktop app's daemon is a process of its own, set out below. A phone has none, set out under Other targets.
+* Work that runs on a timer or in the background never lives in the page, on any target.
+
+Desktop apps run their daemon beside the window. What each side does:
 
 * The daemon is plain Node in `src/daemon`, with no Electron in it. It owns everything that can run without a window: the store and its migrations, the sync client, backups, history, the MCP endpoint, scheduled and background work, timers, and desktop notifications.
 * The window is Electron's main process in `src/main`, its preload in `src/preload`, and the page in `src/web`. The main process keeps only what needs Electron or the screen: windows, the tray icon and menus, file dialogs, opening folders and links, the page's theme, the system's idle time, and the app's links handed over from a second launch.
@@ -83,13 +95,13 @@ Starting and stopping:
 * One daemon runs per user and data file. A second one finds the socket answering and exits.
 * `<app> --daemon` starts only the daemon. A "Start at login" setting, on by default, writes an XDG autostart entry that runs it.
 * Closing the window ends only the window. The tray icon, where the app has one, keeps the main process open. The daemon keeps running until the user stops it from Settings or the tray, or turns off "Keep running in the background", after which it stops once the last window has closed.
-* The daemon's notifications come through X-Libs' `agent/desktop_notify`. Clicking one opens the app's link for the item, which opens the window on it.
+* The daemon sends the app's desktop notifications, as [Notifications](#notifications) sets out.
 
 The shared pieces are in X-Libs: `local_daemon` for the socket, the calls over it, the events and starting the daemon, and `autostart` for the login entry.
 
 Other targets:
 
-* The web app's server is its daemon: it runs the same handlers and the same scheduled work.
+* The web app's server runs the same handlers and the same scheduled work as the desktop daemon.
 * A phone has no daemon. Its page does the daemon's work while it is open, and hands the operating system ahead of time whatever must happen while the app is closed, such as notifications through Capacitor's local notifications.
 
 ## APIs and MCP
@@ -144,12 +156,12 @@ An app's data is kept the same way in every app, so users get the same safety ev
 
 Settings:
 
-* Every app has a Settings page, the last row of the sidebar's foot (the `Shell`'s `settings`), drawn with `SettingsPage`: each feature's own sections, then those of Sync, Backups and Plugins below, and for an admin on the server Users and Tokens. An app keeps no settings anywhere else, such as on a page of their own or in a dialog opened from outside the Settings page.
+* Every app has a Settings page, the last row of the sidebar's foot (the `Shell`'s `settings`), drawn with `SettingsPage`: each feature's own sections, then those of Sync, Backups, Notifications, Import and export, and Plugins below, and for an admin on the server Users and Tokens. An app keeps no settings anywhere else, such as on a page of their own or in a dialog opened from outside the Settings page.
 * A section that grows too cluttered to scan, such as one listing many sources, accounts or services each with its own keys, switches and actions, moves each group's controls into its own dialog opened from the Settings page. The section keeps one row per group: its name, a short status such as "Signed in" or "No key", and a button that opens the dialog. Each dialog holds every setting and action of that group and nothing else.
 
 Sync:
 
-* Every app should sync, so its data is the same on a server and every device; an app whose data lives on more than one device, such as a desktop or phone app with its own copy and a server, must. Either way it syncs through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the server and `create_sync_client` on each device. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
+* Every app syncs, so its data is the same on its server and on every device, and each device keeps working offline on its own copy. It syncs through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the server and `create_sync_client` on each device. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
 * The newest write of each value wins. The first time a device connects, the user chooses which copy wins, and the other is backed up before it is replaced.
 * A device keeps the server's address and token through `file_sync_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
 * The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync", where the device signs in with the user's name and password and asks before one copy replaces the other. A browser shows no sync section, since it is already on the server.
@@ -160,7 +172,7 @@ Backups:
 
 * Every app that keeps data of its own backs it up: an SQLite store through `sqlite_backups`, any other store through `backups` with a store of its own. Backups are named by `backup_naming` after the time they were taken.
 * Daily backups are on by default and keep the last 14 (`default_backup_schedule`). `keep_backing_up` takes them while the app runs. Backups made by hand are always kept. The schedule is a setting of the device, never synced.
-* A backup is taken before anything replaces the data: a restore, a sync that takes the server's copy, a replace of the server's data, and a schema upgrade.
+* A backup is taken before anything replaces the data: a restore, an import, a sync that takes the server's copy, a replace of the server's data, and a schema upgrade.
 * A restore backs up the current data first, so it can itself be undone. After a restore, sync forgets its history (`after_restore: engine.forget_history`), and the user chooses again which copy wins.
 * Where backups go: beside the database in the desktop app's profile folder, in a folder the user picks on a phone, and in the data folder of a server. The settings page shows `BackupSettings` under a section called "Backups", through the `BackupMethods` calls.
 
@@ -171,6 +183,16 @@ History:
 * The versions table syncs like any other (`history.synced_table`), and `history.forget_touched` is the sync engine's `after_apply`, so each version is recorded once, by the device that made it.
 * Versions older than a set number of days are pruned, keeping each item's newest. The number of days is a setting.
 * Every app has a History page, a row of the sidebar, showing the latest changes to every item, and shows an item's history from the item itself, through the `history_methods` calls. How long versions are kept is a setting on the Settings page, not on the History page.
+
+Import and export:
+
+* Every catalogue an app keeps, such as its titles, tasks, transactions or workouts, can be exported and imported as JSON and as CSV, so users can take their data anywhere and bring it back.
+* A JSON export is one file holding every table of the catalogue: `{ app, kind, version, exported_at, tables }`, each table a list of rows by column name. A CSV export is one file per table, named for the table, with a header row of column names, written and read through X-Libs' `csv`.
+* An import reads either format into the same rows. It refuses a file made for another app or a newer version, and it matches an item already kept by its id: where the two differ, the user chooses what to keep before anything is written.
+* All settings export and import as one JSON file, `{ app, kind: "settings", version, exported_at, settings }`. Settings that belong to one device are left out, and an import ignores keys the app does not know.
+* An export leaves out passwords, tokens and keys for other services.
+* Import and export are calls in the app's `api_spec`, so programs and MCP clients can use them too. The settings page offers each catalogue's import and export in that feature's section, and the settings file under a section called "Import and export".
+* Imports from other apps' formats, such as Trakt or Liftosaur, come on top of these, as bundled importer plugins.
 
 Where these do not fit, such as an app whose data is a cache of files or of another service, or a log that is never edited, the app's `README.md` says which it leaves out and why.
 
@@ -223,7 +245,7 @@ Versioning:
 
 ## Plugins
 
-An app that can be extended does it the same way in every app, so a plugin author meets one manifest, one set of extension points and one settings page. The modules are `plugins`, `plugin_folder` and `server/plugin_files` for any side of the app, and `web/plugin_imports` and `web/react/plugins` on the page. They are named in the [X-Libs README](https://github.com/x-tech-laboratories/X-Libs#readme).
+Every app can be extended with plugins, the same way in every app, so a plugin author meets one manifest, one set of extension points and one settings page. Every app runs the X-Libs plugin host, even before anyone has written a plugin for it, and its own features that others could replace are written as bundled plugins. The modules are `plugins`, `plugin_folder` and `server/plugin_files` for any side of the app, and `web/plugin_imports` and `web/react/plugins` on the page. They are named in the [X-Libs README](https://github.com/x-tech-laboratories/X-Libs#readme).
 
 What a plugin is:
 
@@ -245,6 +267,25 @@ In the page:
 * The settings page shows `PluginSettings` under a section called "Plugins": each plugin's name, version, state and, when it cannot run, why, with an On switch and its settings fields. On and off and the settings are kept through `json_plugin_storage` in the app's own store, so they survive a restart.
 * Plugin parts of the page are drawn with `PluginSlot`, which leaves out a part that throws without taking the page down. Plugin commands are bound with `use_plugin_shortcuts` and listed in menus with `plugin_menu_items`.
 * The page draws after `host.start()` has finished, since pages ask for what plugins provide as they mount.
+
+## Notifications
+
+Every app tells its user what they need to know while it is not in front of them, such as a reminder that is due, a backup that failed or a new release, the same way in every app.
+
+Where notifications come from:
+
+* The daemon or the server decides when to notify, never the page, so notifications arrive with every window closed.
+* On the desktop, the daemon shows them through X-Libs' `agent/desktop_notify`. Clicking one opens the app's link for the item, which opens the window on it.
+* On a phone, the page hands them to the operating system ahead of time through Capacitor's local notifications, wrapped in X-Libs, so they arrive while the app is closed.
+* A server sends them through the channels of X-Libs' `server/notify`: ntfy, a webhook, mail and Apprise. A channel's password or token is read from a file, never kept in the app's settings.
+* A notification about an item has a key, so a newer one about the same item replaces the old one instead of piling up.
+
+In the page:
+
+* The settings page shows a section called "Notifications": each kind of notification the app sends, with an On switch, and on a server the channels each kind goes to. Which kinds are on is a setting of each device; the server's channels are a setting of the server.
+* A toast answers what the user just did in the page and is not a notification. A notification is never only a toast.
+
+An app with nothing to tell its user while it is closed writes so in its `README.md`.
 
 ## Repository layout and scripts
 
@@ -308,7 +349,7 @@ An app adds its own commands (`hash-password`, `seed`) beside these and does not
 * Commits use Conventional Commits (`feat(web): ...`, `fix(agent): ...`, `refactor: ...`). A breaking change uses `!`. A commit made with a tool's help carries an `Assisted-by` trailer naming it.
 * The dev environment is the Nix flake or shell. `nix-shell` gives Node and the tools the tests need.
 
-## Testing and linting
+## Testing, CI and delivery
 
 * `vitest` is the test runner in every repo. `npm test` is `vitest run`.
 * Tests live in `tests/` and are named for the behaviour: `tests/scheduler.test.ts`. A rendered component test is `tests/<widget>.test.tsx`.
@@ -362,6 +403,7 @@ Where it runs:
 * Local runs cover only the files changed, plus one `npm run coverage` before a pull request to commit a raised floor. CI runs the whole suite.
 * CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main`, on pull requests and on `workflow_dispatch`: Node 24, `npm ci`, `npm run build`, `npm run coverage`, a check that the floor in `vitest.config.ts` is committed, `npm run lint`. X-Libs carries it.
 * A pull request fails when coverage drops below the floor, and when it raises coverage past the floor without committing the new one.
+* `main` takes changes only through pull requests whose CI passes.
 * An app whose flake packages npm dependencies builds them with nixpkgs' `importNpmLock` (`npmDeps = importNpmLock { npmRoot = ../.; }` and `npmConfigHook = importNpmLock.npmConfigHook`), so there is no `npmDepsHash` to keep in step with `package-lock.json`.
 
 The workflow:
@@ -397,6 +439,13 @@ Dev dependencies every repo carries for this:
 * `vitest`, `@vitest/coverage-v8`, `oxlint` and `typescript`.
 * For repos with widgets, also `jsdom`, `@testing-library/react` and `@testing-library/dom`.
 
+Delivery:
+
+* Every push to `main` builds every target the app ships in CI, once its tests pass: the web build and server package, the desktop installers and the Android package, kept as the run's artifacts.
+* A version tag such as `v1.2.3` publishes those builds as a GitHub release. The Android package is signed with a key kept in the repository's secrets.
+* Releases are made by CI only, never from a developer's machine, so every release is built from a commit that passed its tests.
+* A library publishes its package from its version tag the same way.
+
 ## Styling and branding
 
 * Pages draw their look from Halon: `halon-tokens.css` for colours, spacing and type, `halon.css` for the widget styles. An app's own `app.css` holds layout only and uses the tokens, never raw colours.
@@ -408,7 +457,7 @@ Dev dependencies every repo carries for this:
 
 ## Current state and migration order
 
-Each app as it is today.
+Each app as it is today. The [Standards Matrix](/standards/matrix) shows which parts of this standard each app meets.
 
 | App | Stack today | Target | Gap |
 | --- | --- | --- | --- |
@@ -447,7 +496,8 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Repo has `LICENSE` (GPL-3.0-or-later), `README.md`, `flake.nix`, `shell.nix`.
 * [ ] `package.json`: `"engines": { "node": ">=24" }`, `"license": "GPL-3.0-or-later"`, ESM.
 * [ ] Layout is `src/server|web|agent|shared` (or `src/daemon|main|preload|web` for desktop), plus `tests/`, `docs/`, `nix/`.
-* [ ] A desktop app runs as a daemon and a window over the daemon's socket, keeps working with the window closed, and starts at login.
+* [ ] The app ships on the web, the desktop and Android from one `src/web` tree, or its `README.md` names the limit that rules a target out.
+* [ ] The app's work runs in a daemon apart from its UI: the server on the web, and on the desktop a daemon over its socket that keeps working with the window closed and starts at login.
 * [ ] `tsconfig.json` references one config per target, each with the strict flags from `tsconfig.base.json`.
 * [ ] Scripts `dev:server`, `dev:web`, `build`, `start`, `test`, `coverage`, `lint` exist and use the standard commands.
 * [ ] `config.example.json` runs the app as it stands.
@@ -456,14 +506,16 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Signing in uses the X-Libs accounts (`register_accounts`, `SignInForm`, `AccountView`, `users_settings`) and says "Sign in" and "Sign out"; agents use the X-Libs agent modules.
 * [ ] Every call has an `api_spec` entry, and the server offers `/api/openapi.json` and `/api/mcp`.
 * [ ] A Settings page in the sidebar's foot, with Users and Tokens sections for an admin, and a History page in the sidebar.
-* [ ] Data syncs through the X-Libs sync modules; data on more than one device must.
+* [ ] Data syncs between the server and every device through the X-Libs sync modules.
 * [ ] An app that syncs shows `SyncButton` in its sidebar's foot on every device that syncs.
 * [ ] A server with a self-signed or untrusted certificate is reached only after the user trusts it, through the X-Libs certificate modules.
 * [ ] Data is backed up daily through the X-Libs backups, before every replace, with a Backups section in settings.
 * [ ] Items users edit keep a history through `create_history`, shown on the History page.
-* [ ] An app that can be extended uses the X-Libs plugin host, with its bundled plugins, a Plugins section in settings and its trust note in the README.
+* [ ] Every catalogue exports and imports as JSON and CSV, and all settings as one JSON file.
+* [ ] The app runs the X-Libs plugin host, with its bundled plugins, a Plugins section in settings and its trust note in the README.
+* [ ] The daemon or server notifies the user through X-Libs' notification modules, with a Notifications section in settings.
 * [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
-* [ ] A CI workflow exists (`.github/workflows/ci.yml`) and checks coverage against a floor in `vitest.config.ts` that only rises, and a flake that packages npm dependencies reads them with `importNpmLock`.
+* [ ] A CI workflow exists (`.github/workflows/ci.yml`) and checks coverage against a floor in `vitest.config.ts` that only rises, builds every target on `main` and publishes a release from each version tag, and a flake that packages npm dependencies reads them with `importNpmLock`.
 * [ ] A rendered test exists for each widget the app adds.
 * [ ] No app-level copy of an X-Libs widget.
 * [ ] Commits are Conventional Commits.

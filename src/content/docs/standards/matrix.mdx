@@ -1,0 +1,108 @@
+---
+title: Standards Matrix
+sidebar:
+  order: 3
+---
+
+Which parts of the [Application Standard](/standards/application) each X-Tech app meets today, read
+from each app's code on its `main` branch. Each column links to the part of the standard it checks.
+
+✅ meets it · 🟡 meets part of it · ❌ does not meet it yet · ➖ does not apply, with the reason written in the app's README
+
+| App | [Stack](/standards/application#stack-per-target) | [Daemon + UI](/standards/application#daemon-and-ui) | [Platforms](/standards/application#platforms) | [API + MCP](/standards/application#apis-and-mcp) | [Accounts](/standards/application#accounts-and-signing-in) | [Settings](/standards/application#settings-sync-backups-and-history) | [Sync](/standards/application#settings-sync-backups-and-history) | [Backups](/standards/application#settings-sync-backups-and-history) | [History](/standards/application#settings-sync-backups-and-history) | [Import + Export](/standards/application#settings-sync-backups-and-history) | [Plugins](/standards/application#plugins) | [Notifications](/standards/application#notifications) | [CI/CD](/standards/application#testing-ci-and-delivery) | [Coverage floor](/standards/application#testing-ci-and-delivery) | [Branding](/standards/application#styling-and-branding) |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| <span style={{ whiteSpace: "nowrap" }}>X-Backups</span> | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟡 | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Budget</span> | ✅ | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ❌ | ❌ | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Fitness</span> | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ❌ | ❌ | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Media-Tracker</span> | ✅ | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Monitor</span> | ✅ | ✅ | 🟡 | ✅ | ✅ | 🟡 | 🟡 | ✅ | ❌ | ❌ | ✅ | ✅ | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Music</span> | ✅ | ❌ | ✅ | ✅ | ➖ | ✅ | ➖ | ✅ | ✅ | ❌ | ❌ | ❌ | 🟡 | 🟡 | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Nix</span> | ✅ | ✅ | 🟡 | 🟡 | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | 🟡 | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Stream</span> | 🟡 | ❌ | 🟡 | ❌ | ➖ | ✅ | ➖ | ✅ | 🟡 | ❌ | ✅ | ❌ | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>X-Tasks</span> | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ❌ | 🟡 | 🟡 | ❌ | ✅ |
+| <span style={{ whiteSpace: "nowrap" }}>CODEX</span> | 🟡 | 🟡 | 🟡 | ❌ | ➖ | 🟡 | ❌ | ✅ | ❌ | ❌ | ❌ | 🟡 | 🟡 | ❌ | 🟡 |
+
+Every app's CI builds, tests and lints each pull request, but none publishes releases from a version tag yet, so CI/CD is partly met everywhere; X-Tasks comes closest, building its Android and desktop packages on every push. No app's CI checks a coverage floor yet.
+
+Libraries and components whose host fixes their shape follow only the parts that apply to them, as
+the standard's scope sets out, and are left out of the matrix: X-Libs, Halon, RoboBuddy,
+ai-readiness, MOSAIC, X-Login and X-Plymouth.
+
+## What each app still lacks
+
+### X-Backups
+
+- Platforms: web only; no desktop or Android app.
+- API + MCP: MCP is served, `/api/openapi.json` is not.
+- Settings: configuration views, but no `SettingsPage` in the sidebar's foot.
+- Sync, History, Import + Export, Plugins, Notifications: not started.
+
+### X-Budget
+
+- Daemon + UI: the desktop app keeps its store in Electron's main process, with no daemon.
+- Import + Export: each budget exports and imports as JSON; no CSV and no settings file.
+- Plugins, Notifications: not started.
+
+### X-Fitness
+
+- Import + Export: imports Liftosaur's files only; nothing of its own exports.
+- Plugins, Notifications: not started.
+
+### X-Media-Tracker
+
+- Daemon + UI: the desktop app keeps its store in Electron's main process, with no daemon.
+- Notifications: book alerts go out through ntfy, a webhook and mail; no desktop or phone
+  notifications and no Notifications settings section.
+
+### X-Monitor
+
+- Platforms: web only; no desktop or Android app.
+- Settings: a sidebar row of its own instead of the sidebar's foot.
+- Sync: its own record sync, not the X-Libs sync modules.
+- History: an event log, but no `create_history` and no History page.
+- Import + Export: not started.
+
+### X-Music
+
+- Platforms: desktop only, since it plays through `mpv` from local disks, as its README says.
+- Daemon + UI: library and playback run in Electron's main process, with no daemon.
+- Plugins: planned, not started.
+- Import + Export, Notifications: not started.
+- Coverage floor: set in `vitest.config.ts`, but CI does not run coverage.
+
+### X-Nix
+
+- Platforms: web only; no desktop or Android app.
+- API + MCP: MCP is served, `/api/openapi.json` is not.
+- Sync, History, Import + Export, Plugins: not started.
+- Notifications: sent through ntfy, a webhook and Apprise, with no Notifications settings section.
+
+### X-Stream
+
+- Stack: on older X-Libs and Halon, and also uses PouchDB beside its SQLite store.
+- Daemon + UI: work runs in Electron's main process and the page, with no daemon.
+- Platforms: desktop only; its README plans a React Native phone app, which the standard does not
+  use.
+- API + MCP: none.
+- History: kept for playlists only.
+- Import + Export, Notifications: not started.
+
+### X-Tasks
+
+- API + MCP: its own MCP server on a port of its own, not `api_spec`, and no `/api/openapi.json`.
+- Import + Export: the worklog saves to a file; nothing else exports or imports.
+- Plugins: not started.
+- Notifications: desktop and phone notifications work; the server sends none through the X-Libs
+  channels, and there is no Notifications settings section.
+
+### CODEX
+
+- Stack: Electron only, with no server.
+- Daemon + UI: a daemon on its own socket client, not X-Libs' `local_daemon`.
+- Platforms: desktop only.
+- API + MCP: uses other programs' MCP tools but offers none of its own.
+- Settings: an options view, not a `SettingsPage` in the sidebar's foot.
+- Notifications: Electron's own notifications from the main process, not X-Libs' `desktop_notify`
+  from the daemon.
+- Sync, History, Import + Export, Plugins: not started.
+- Branding: the name lacks the `X-` prefix.
