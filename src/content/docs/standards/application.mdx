@@ -10,7 +10,7 @@ How X-Tech applications are built. Every app follows it where possible, so the s
 
 * Every X-Tech app is written in TypeScript on Node with React.
 * The web app is the primary target. Desktop and mobile wrap the same React page, so every target shows the same X-Libs widgets.
-* Every app runs on the web, the desktop and Android, does its work in a daemon apart from its UI, syncs, takes plugins and notifies its user, as the sections below set out.
+* Every app runs on the web, the desktop and Android, does its work in a daemon apart from its UI, syncs, takes plugins, notifies its user, imports and exports its data and settings, and is tested and released by CI against a coverage floor that only rises, as the sections below set out.
 * One widget set, one agent and server stack and one toolchain are shared across apps. This is what lets X-Libs be used in full.
 * The standard covers new apps and rewrites. An existing app moves over in the order given under Current state.
 * Exceptions stay as they are until they are rewritten:
@@ -171,7 +171,7 @@ Backups:
 
 * Every app that keeps data of its own backs it up: an SQLite store through `sqlite_backups`, any other store through `backups` with a store of its own. Backups are named by `backup_naming` after the time they were taken.
 * Daily backups are on by default and keep the last 14 (`default_backup_schedule`). `keep_backing_up` takes them while the app runs. Backups made by hand are always kept. The schedule is a setting of the device, never synced.
-* A backup is taken before anything replaces the data: a restore, a sync that takes the server's copy, a replace of the server's data, and a schema upgrade.
+* A backup is taken before anything replaces the data: a restore, an import, a sync that takes the server's copy, a replace of the server's data, and a schema upgrade.
 * A restore backs up the current data first, so it can itself be undone. After a restore, sync forgets its history (`after_restore: engine.forget_history`), and the user chooses again which copy wins.
 * Where backups go: beside the database in the desktop app's profile folder, in a folder the user picks on a phone, and in the data folder of a server. The settings page shows `BackupSettings` under a section called "Backups", through the `BackupMethods` calls.
 
@@ -182,6 +182,16 @@ History:
 * The versions table syncs like any other (`history.synced_table`), and `history.forget_touched` is the sync engine's `after_apply`, so each version is recorded once, by the device that made it.
 * Versions older than a set number of days are pruned, keeping each item's newest. The number of days is a setting.
 * Every app has a History page, a row of the sidebar, showing the latest changes to every item, and shows an item's history from the item itself, through the `history_methods` calls. How long versions are kept is a setting on the Settings page, not on the History page.
+
+Import and export:
+
+* Every catalogue an app keeps, such as its titles, tasks, transactions or workouts, can be exported and imported as JSON and as CSV, so users can take their data anywhere and bring it back.
+* A JSON export is one file holding every table of the catalogue: `{ app, kind, version, exported_at, tables }`, each table a list of rows by column name. A CSV export is one file per table, named for the table, with a header row of column names, written and read through X-Libs' `csv`.
+* An import reads either format into the same rows. It refuses a file made for another app or a newer version, and it matches an item already kept by its id: where the two differ, the user chooses what to keep before anything is written.
+* All settings export and import as one JSON file, `{ app, kind: "settings", version, exported_at, settings }`. Settings that belong to one device are left out, and an import ignores keys the app does not know.
+* An export leaves out passwords, tokens and keys for other services.
+* Import and export are calls in the app's `api_spec`, so programs and MCP clients can use them too. The settings page offers each catalogue's import and export in that feature's section, and the settings file under a section called "Import and export".
+* Imports from other apps' formats, such as Trakt or Liftosaur, come on top of these, as bundled importer plugins.
 
 Where these do not fit, such as an app whose data is a cache of files or of another service, or a log that is never edited, the app's `README.md` says which it leaves out and why.
 
@@ -338,7 +348,7 @@ An app adds its own commands (`hash-password`, `seed`) beside these and does not
 * Commits use Conventional Commits (`feat(web): ...`, `fix(agent): ...`, `refactor: ...`). A breaking change uses `!`. A commit made with a tool's help carries an `Assisted-by` trailer naming it.
 * The dev environment is the Nix flake or shell. `nix-shell` gives Node and the tools the tests need.
 
-## Testing and linting
+## Testing, CI and delivery
 
 * `vitest` is the test runner in every repo. `npm test` is `vitest run`.
 * Tests live in `tests/` and are named for the behaviour: `tests/scheduler.test.ts`. A rendered component test is `tests/<widget>.test.tsx`.
@@ -392,6 +402,7 @@ Where it runs:
 * Local runs cover only the files changed, plus one `npm run coverage` before a pull request to commit a raised floor. CI runs the whole suite.
 * CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main`, on pull requests and on `workflow_dispatch`: Node 24, `npm ci`, `npm run build`, `npm run coverage`, a check that the floor in `vitest.config.ts` is committed, `npm run lint`. X-Libs carries it.
 * A pull request fails when coverage drops below the floor, and when it raises coverage past the floor without committing the new one.
+* `main` takes changes only through pull requests whose CI passes.
 * An app whose flake packages npm dependencies builds them with nixpkgs' `importNpmLock` (`npmDeps = importNpmLock { npmRoot = ../.; }` and `npmConfigHook = importNpmLock.npmConfigHook`), so there is no `npmDepsHash` to keep in step with `package-lock.json`.
 
 The workflow:
@@ -426,6 +437,13 @@ Dev dependencies every repo carries for this:
 
 * `vitest`, `@vitest/coverage-v8`, `oxlint` and `typescript`.
 * For repos with widgets, also `jsdom`, `@testing-library/react` and `@testing-library/dom`.
+
+Delivery:
+
+* Every push to `main` builds every target the app ships in CI, once its tests pass: the web build and server package, the desktop installers and the Android package, kept as the run's artifacts.
+* A version tag such as `v1.2.3` publishes those builds as a GitHub release. The Android package is signed with a key kept in the repository's secrets.
+* Releases are made by CI only, never from a developer's machine, so every release is built from a commit that passed its tests.
+* A library publishes its package from its version tag the same way.
 
 ## Styling and branding
 
@@ -492,10 +510,11 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] A server with a self-signed or untrusted certificate is reached only after the user trusts it, through the X-Libs certificate modules.
 * [ ] Data is backed up daily through the X-Libs backups, before every replace, with a Backups section in settings.
 * [ ] Items users edit keep a history through `create_history`, shown on the History page.
+* [ ] Every catalogue exports and imports as JSON and CSV, and all settings as one JSON file.
 * [ ] The app runs the X-Libs plugin host, with its bundled plugins, a Plugins section in settings and its trust note in the README.
 * [ ] The daemon or server notifies the user through X-Libs' notification modules, with a Notifications section in settings.
 * [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
-* [ ] A CI workflow exists (`.github/workflows/ci.yml`) and checks coverage against a floor in `vitest.config.ts` that only rises, and a flake that packages npm dependencies reads them with `importNpmLock`.
+* [ ] A CI workflow exists (`.github/workflows/ci.yml`) and checks coverage against a floor in `vitest.config.ts` that only rises, builds every target on `main` and publishes a release from each version tag, and a flake that packages npm dependencies reads them with `importNpmLock`.
 * [ ] A rendered test exists for each widget the app adds.
 * [ ] No app-level copy of an X-Libs widget.
 * [ ] Commits are Conventional Commits.
