@@ -306,6 +306,7 @@ src/
 tests/       one *.test.ts per behaviour, mirroring src/
 docs/        written documentation
 .github/workflows/ci.yml
+.github/dependabot.yml
 .oxlintrc.json  (optional)
 nix/         package.nix, module.nix, agent-module.nix
 flake.nix
@@ -410,6 +411,7 @@ Where it runs:
 * CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main`, on pull requests and on `workflow_dispatch`: Node 24, `npm ci`, `npm run build`, `npm run coverage`, a check that the floor in `vitest.config.ts` is committed, `npm run lint`. X-Libs carries it.
 * A pull request fails when coverage drops below the floor, and when it raises coverage past the floor without committing the new one.
 * `main` takes changes only through pull requests whose CI passes.
+* Dependabot keeps X-Libs and Halon current: `.github/dependabot.yml` has a daily `npm` entry that allows `@x-tech-laboratories/*` and groups those packages into one pull request, so the Halon peer of X-Libs moves with it. X-Libs itself allows only Halon.
 * An app whose flake packages npm dependencies builds them with nixpkgs' `importNpmLock` (`npmDeps = importNpmLock { npmRoot = ../.; }` and `npmConfigHook = importNpmLock.npmConfigHook`), so there is no `npmDepsHash` to keep in step with `package-lock.json`.
 
 The workflow:
@@ -522,6 +524,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] The daemon or server notifies the user through X-Libs' notification modules, with a Notifications section in settings.
 * [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
 * [ ] A CI workflow exists (`.github/workflows/ci.yml`) and checks coverage against a floor in `vitest.config.ts` that only rises, builds every target on `main` and publishes a release from each version tag, and a flake that packages npm dependencies reads them with `importNpmLock`.
+* [ ] `.github/dependabot.yml` updates `@x-tech-laboratories/*` daily, grouped.
 * [ ] A rendered test exists for each widget the app adds.
 * [ ] No app-level copy of an X-Libs widget.
 * [ ] Commits are Conventional Commits.
