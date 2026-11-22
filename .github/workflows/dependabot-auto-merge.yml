@@ -3,6 +3,7 @@ name: Dependabot auto-merge
 on: pull_request
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
@@ -11,8 +12,20 @@ jobs:
     # Only Dependabot's grouped X-Libs and Halon bumps; the required checks on main still decide when it merges.
     if: github.event.pull_request.user.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/npm_and_yarn/x-tech-')
     runs-on: ubuntu-latest
+    env:
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - run: gh pr merge --auto --merge '$PR_URL'
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: gh pr merge --auto --merge "$PR_URL"
+      # A merge made with this token starts no push workflow, so publish the merged bump from here.
+      - run: |
+          for _ in $(seq 60); do
+            case "$(gh pr view "$PR_URL" --json state -q .state)" in
+              MERGED) exec gh workflow run deploy.yml --ref main ;;
+              CLOSED) exit 0 ;;
+            esac
+            gh pr checks "$PR_URL" --required --json bucket -q 'any(.bucket == "fail")' | grep -q true && exit 0
+            sleep 30
+          done
+          echo "Not merged within 30 minutes; the next push to main or the weekly rebuild publishes it."
