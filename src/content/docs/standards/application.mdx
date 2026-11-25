@@ -28,6 +28,7 @@ How X-Tech applications are built. Every app follows it where possible, so the s
 | Web app         | React page bundled by Vite, served by the daemon                                       |
 | Desktop app     | Electron built with electron-vite, wrapping the same React UI                          |
 | Mobile app      | Capacitor, wrapping the same React UI                                                  |
+| Linux phone app | X-WebView, running the desktop app's Electron build on the system WebKit               |
 | CLI and agent   | Node script in TypeScript, built on the X-Libs `agent` modules                         |
 
 Versions floor:
@@ -39,12 +40,14 @@ Versions floor:
 * Fastify 5 or newer, with `@fastify/cookie`, `@fastify/session`, `@fastify/rate-limit`, `@fastify/static` and `@fastify/websocket` as the app needs them.
 * Electron and electron-vite at the current major.
 * Capacitor at the current major.
+* X-WebView at its current release.
 * `oxlint` for linting, `vitest` for tests.
 
 Rules per target:
 
 * The web, desktop and mobile apps share one `src/web` React tree, and each is a UI onto a daemon, as [Daemon and UI](#daemon-and-ui) sets out. The desktop app loads the tree in the renderer and reaches a daemon through a preload bridge and the main process.
 * A mobile app loads the built `src/web` page in Capacitor and reaches a daemon over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-Libs when a second app needs them.
+* A Linux phone app is the desktop app's built main process, preload and page, run unchanged by [X-WebView](https://github.com/x-tech-laboratories/X-WebView) on the system WebKitGTK instead of Chromium, so it draws through the GPU on phones Chromium cannot use, such as the PinePhone's OpenGL ES 2.0 Mali-400. The app's flake packages it with X-WebView's `lib.wrap_app`, which bundles its preload at build time. Like the desktop app, it runs a local daemon or connects to a remote one.
 * A page works at phone width, through the X-Libs `Shell` and the widgets' phone layouts.
 * Every app's sidebar ends in the same foot, drawn by the `Shell` and pinned to the sidebar's bottom while the rows above it scroll: the sync button in an app that syncs, then the app's other rows, then the theme, then the signed-in user and Sign out, then Settings, last. None of these sits in the top bar, which holds only the brand and the app's tools.
 * The daemon owns the app's storage, a JSON store or SQLite as the data needs; every UI and agent reaches it only through a daemon.
@@ -65,7 +68,7 @@ Data and migrations (an app with a SQLite store):
 
 Every app reaches its users wherever they are, from one codebase:
 
-* Every app with a UI ships on the web, on the Linux desktop through Electron and on Android through Capacitor, all drawing the one `src/web` React tree. No target has a page or a feature of its own that the others could have.
+* Every app with a UI ships on the web, on the Linux desktop through Electron, on Linux phones such as the PinePhone through X-WebView and on Android through Capacitor, all drawing the one `src/web` React tree. No target has a page or a feature of its own that the others could have.
 * An app whose daemon belongs on one host, such as X-Backups or X-Nix, still ships desktop and Android apps, as portals onto that daemon, so the page is never only in a browser tab.
 * A target the app leaves out is written down in its `README.md` with the hard limit that rules it out, such as a player that needs `mpv` on the machine it runs on.
 
@@ -484,6 +487,7 @@ Each app as it is today. The [Standards Matrix](/standards/matrix) shows which p
 | ai-readiness | JavaScript with Node's test runner, Prettier, Node 20, MIT | CLI | TypeScript; Node 24; oxlint and vitest; GPL-3.0-or-later |
 | X-Libs | TypeScript library, ESM, React widgets, Fastify server modules (token sign-in, sign-in guard, event stream, web folder, replies, config, CORS); shortcuts, dates, trees, prefs, selection, virtual windows, logging, backups, media tiles, list picker, page view, progress, rating, volume, following output, Markdown, suggestions, status pill, path input, stores; Electron app, bridge with envelopes, events, fetch and streaming fetch, window helpers; table on TanStack with virtualization | library | facet pane, entity merge grid, name-and-password sign-in, forge webhook verification, Electron sidecar, number field, yes/no-with-note dialog, empty-label table column id fallback |
 | X-Themes (Halon) | stylesheets and tokens | stylesheets | none |
+| X-WebView | TypeScript 7, Node 24 main process with an Electron-compatible `electron` module, GJS window host on GTK 3 and WebKitGTK 4.1, esbuild-wasm for preloads, Nix package for x86_64 and aarch64, vitest and oxlint, at 0.1.0 | runtime | tray and menus are inert; a WPE WebKit host for fractional scaling |
 | X-Monitor | Python 3.9+, NiceGUI, peewee, asyncssh | web (Fastify + React) and agent | rewrite in TypeScript; its agent becomes an X-Libs agent |
 | MOSAIC | Python experiment (LoRA training, router) | stays Python | exception: no UI; the ML libraries are Python only |
 | web-greeter | Python 3.13, PySide6, LightDM | stays Python | exception: host fixes the language |
