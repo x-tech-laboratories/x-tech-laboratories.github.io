@@ -4,13 +4,13 @@ description: Tecnología, usada con creatividad, para las personas que la usan.
 template: splash
 hero:
   title: Tecnología, usada con creatividad, para las personas que la usan.
-  tagline: X-Tech Laboratories es una comunidad de código abierto que crea software que cada persona puede adaptar a sus necesidades, que funciona con todo lo demás que usa y que reúne lo mejor de lo que el código abierto ya ofrece.
+  tagline: X-Tech Laboratories es un ecosistema de código abierto de aplicaciones para el día a día, en el espíritu de KDE y GNOME. Las aplicaciones comparten un mismo conjunto de bibliotecas, un mismo diseño y una misma arquitectura, toman lo mejor de los productos que la gente ya usa y se conectan con todo lo demás mediante plugins y estándares abiertos. Empezó como el conjunto de herramientas propio de una persona, y cualquiera es bienvenido a usarlo o a ayudar a construirlo.
   image: ../../../../org/branding/icon/icon.svg
   actions:
+    - text: Nuestras aplicaciones
+      link: /es/projects/
     - text: Participa
       link: /es/join/
-    - text: Nuestros proyectos
-      link: /es/projects/
       variant: minimal
 ---
 
@@ -19,34 +19,36 @@ import { Card, CardGrid, LinkCard } from '@x-tech-laboratories/x-libs/web/react/
 ## Lo que defendemos
 
 <CardGrid>
+  <Card title="Un solo ecosistema">
+    Cada X-app se construye sobre las mismas bibliotecas, el mismo diseño y la misma arquitectura, así que las aplicaciones se parecen, se comportan igual y se comunican entre sí. Una corrección o una función en la capa compartida llega a todas las aplicaciones a la vez, y aprender a usar una enseña a usar las demás.
+  </Card>
   <Card title="Extensible, configurable, interoperable">
-    Las aplicaciones se adaptan a quienes las usan, y no al revés: plugins, ajustes, temas y diseños, construidos sobre formatos abiertos y protocolos estándar para que funcionen con otras herramientas. Cuando la gente quiere cosas distintas, la respuesta es un plugin o un ajuste, no una bifurcación. El software construido así llega a la mayor cantidad de personas.
+    Las aplicaciones se adaptan a quienes las usan, y no al revés: plugins, ajustes, temas y diseños, construidos sobre formatos abiertos y protocolos estándar para que funcionen con otras herramientas. Cada aplicación tiene una API y un servidor MCP, para que los scripts, otras aplicaciones y los agentes de IA también puedan usarla. Cuando la gente quiere cosas distintas, la respuesta es un plugin o un ajuste, no una bifurcación.
   </Card>
-  <Card title="Consolidar, no fragmentar">
-    El código abierto reparte su esfuerzo entre proyectos rivales que hacen cada uno una parte del trabajo. Reunimos sus mejores funciones bajo un mismo techo e importamos sus datos, para que cambiar no cueste nada.
+  <Card title="Lo mejor de lo que ya existe">
+    Cada aplicación parte de los productos que la gente ya usa, sean de código abierto o no, y reúne sus mejores funciones. Importa sus datos y se conecta con ellos cuando puede, para que cambiar no cueste nada y no se pierda nada por el camino.
   </Card>
-  <Card title="Automatizar en vez de repetir">
-    La CI/CD y el desarrollo guiado por pruebas llevan la carga rutinaria. Las pruebas son el contrato que todo cambio debe cumplir, las compilaciones, publicaciones y comprobaciones se ejecutan solas, y un entorno de desarrollo reproducible funciona desde el primer día. Quienes mantienen el proyecto dedican su tiempo a la dirección y al diseño.
-  </Card>
-  <Card title="Desarrollo asistido por IA">
-    La IA es bienvenida y se usa abiertamente: con responsabilidad, declarada, revisada y guiada por el `AGENTS.md` de cada proyecto.
+  <Card title="Hecho con IA, sujeto a pruebas">
+    La IA es lo que permite que un equipo pequeño, o una sola persona, construya un ecosistema entero. Se usa abiertamente: declarada, revisada y guiada por el `AGENTS.md` de cada proyecto. La CI/CD y las pruebas llevan la carga rutinaria, y todo cambio debe superarlas.
   </Card>
 </CardGrid>
 
-## Guías
+## Estándares y guías
 
-Mecanismos prácticos que cualquier proyecto puede adoptar, un pilar cada vez.
+Los [estándares](/es/standards/) dicen cómo se construye cada X-app y qué aspecto tiene. Las guías son mecanismos prácticos que cualquier proyecto puede adoptar, un pilar cada vez.
 
 <CardGrid>
+  <LinkCard title="Estándar de aplicaciones" description="La arquitectura, las API, los plugins y el proceso de publicación que comparte cada X-app." href="/es/standards/application/" />
+  <LinkCard title="Guías de diseño" description="Qué aspecto tiene y cómo se comporta cada X-app." href="/es/standards/design/" />
   <LinkCard title="Extensible e interoperable" description="Que un proyecto sirva a muchas necesidades." href="/es/guidelines/extensibility/" />
-  <LinkCard title="Consolidación" description="Unir proyectos que compiten sin perder a sus usuarios." href="/es/guidelines/consolidation/" />
+  <LinkCard title="Consolidación" description="Reunir lo mejor de productos que compiten sin perder a sus usuarios." href="/es/guidelines/consolidation/" />
   <LinkCard title="Automatización" description="Que la CI/CD lleve el trabajo rutinario." href="/es/guidelines/automation/" />
   <LinkCard title="Desarrollo guiado por pruebas" description="Que las pruebas sean el contrato que todo cambio debe cumplir." href="/es/guidelines/testing/" />
   <LinkCard title="Guías de instrucciones para agentes" description="Explica a cada agente de IA cómo funciona tu proyecto." href="/es/guidelines/prompting/" />
   <LinkCard title="Puntuación de preparación para IA" description="Comprueba lo preparado que está un proyecto para el desarrollo asistido por IA." href="/es/guidelines/readiness/" />
 </CardGrid>
 
-## Nuestros proyectos
+## Nuestras aplicaciones
 
 <CardGrid>
   <LinkCard title="X-Backups" description="Copias de seguridad con Borg para todos tus equipos, desde una sola página web." href="/es/projects/#x-backups" />
@@ -68,14 +70,14 @@ Mecanismos prácticos que cualquier proyecto puede adoptar, un pilar cada vez.
 2. **Sé transparente con las herramientas.** Declararlas es normal y esperado, nunca una marca en contra de una contribución.
 3. **Pruebas antes que confianza.** El código se acepta porque está verificado, no por quién o qué lo escribió.
 4. **Legible por personas.** Todo el código se mantiene lo bastante sencillo para que una persona pueda revisarlo y mantenerlo sin IA.
-5. **Respeta las licencias y los proyectos de origen.** Reconoce a los proyectos sobre los que construimos y que reunimos, y sigue sus licencias.
+5. **Respeta las licencias y los proyectos de origen.** Reconoce a los productos y proyectos de los que aprendemos y sobre los que construimos, y sigue sus licencias.
 6. **Aligera la carga de quienes mantienen.** La automatización y la IA deben reducir el trabajo de revisar contribuciones, no aumentarlo.
-7. **Construir juntos, no en solitario.** Mejora un proyecto compartido antes de empezar uno nuevo, y constrúyelo para que dure más allá de su primer usuario.
-8. **Extender, no bifurcar.** Resuelve las diferencias con plugins, ajustes y formatos abiertos, para que un proyecto pueda servir a muchas necesidades.
-9. **Comparte lo que funciona.** Las guías, plantillas y herramientas que creamos también son software libre.
+7. **Comparte antes de construir.** Una función que podrían usar dos aplicaciones va a las bibliotecas compartidas, y una idea que encaja en una aplicación existente se convierte allí en una función, un ajuste o un plugin, en vez de en una aplicación nueva.
+8. **Extender, no bifurcar.** Resuelve las diferencias con plugins, ajustes y formatos abiertos, para que una aplicación pueda servir a muchas necesidades.
+9. **Comparte lo que funciona.** Las aplicaciones, bibliotecas, guías y herramientas que creamos son todas software libre.
 
 ## Participa
 
-Lee [cómo participar](/es/join/), o mira proyectos de código abierto que ya usan la IA abiertamente en
-[Awesome AI-Assisted Open Source](/es/awesome/). Todo ocurre de forma abierta en
+X-Tech se construye ante todo para el uso diario de su fundador, de forma abierta. Usa las aplicaciones,
+pide lo que necesites o ayuda a construirlas: lee [cómo participar](/es/join/). Todo ocurre en
 [github.com/x-tech-laboratories](https://github.com/x-tech-laboratories).
