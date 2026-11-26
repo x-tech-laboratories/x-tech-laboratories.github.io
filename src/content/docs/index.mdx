@@ -4,13 +4,13 @@ description: Technology, used creatively, for the people who use it.
 template: splash
 hero:
   title: Technology, used creatively, for the people who use it.
-  tagline: X-Tech Laboratories is an open source community that builds software people can shape to their own needs, that works with everything else they use, and that brings together the best of what open source already offers.
+  tagline: X-Tech Laboratories is an open source ecosystem of everyday apps, in the spirit of KDE and GNOME. The apps share one set of libraries, one design and one architecture, take the best of the products people already use, and connect to everything else through plugins and open standards. It began as one person's own toolkit, and anyone is welcome to use it or help build it.
   image: ../../../org/branding/icon/icon.svg
   actions:
+    - text: Our apps
+      link: /projects/
     - text: Get involved
       link: /join/
-    - text: Our projects
-      link: /projects/
       variant: minimal
 ---
 
@@ -19,34 +19,36 @@ import { Card, CardGrid, LinkCard } from '@x-tech-laboratories/x-libs/web/react/
 ## What we stand for
 
 <CardGrid>
+  <Card title="One ecosystem">
+    Every X-app is built on the same libraries, the same design and the same architecture, so the apps look alike, behave alike and talk to each other. A fix or a feature in the shared layer reaches every app at once, and learning one app teaches you the rest.
+  </Card>
   <Card title="Extensible, configurable, interoperable">
-    Apps adapt to their users, not the other way round: plugins, settings, themes and layouts, built on open formats and standard protocols so they work with other tools. When people want different things, the answer is a plugin or a setting, not a fork. Software built this way reaches the largest number of people.
+    Apps adapt to their users, not the other way round: plugins, settings, themes and layouts, built on open formats and standard protocols so they work with other tools. Every app has an API and an MCP server, so scripts, other apps and AI agents can use it too. When people want different things, the answer is a plugin or a setting, not a fork.
   </Card>
-  <Card title="Consolidate, don't fragment">
-    Open source spreads its effort across rival projects that each do part of the job. We bring their best features together under one roof and import their data, so switching costs nothing.
+  <Card title="The best of what exists">
+    Each app starts from the products people already use, open source or not, and brings their best features together. It imports their data and connects to them where it can, so switching costs nothing and nothing is left behind.
   </Card>
-  <Card title="Automation over toil">
-    CI/CD and test-driven development carry the routine load. Tests are the contract every change must meet, builds, releases and checks run on their own, and a reproducible development environment works on the first day. Maintainers spend their time on direction and design.
-  </Card>
-  <Card title="AI-assisted development">
-    AI is welcome and used in the open: accountable, disclosed, reviewed, and guided by each project's `AGENTS.md`.
+  <Card title="Built with AI, held to tests">
+    AI is what lets a small team, or one person, build a whole ecosystem. It is used in the open: disclosed, reviewed and guided by each project's `AGENTS.md`. CI/CD and tests carry the routine load, and every change must pass them.
   </Card>
 </CardGrid>
 
-## Guidelines
+## Standards and guidelines
 
-Practical mechanisms any project can adopt, one pillar at a time.
+The [standards](/standards/) say how every X-app is built and how it looks. The guidelines are practical mechanisms any project can adopt, one pillar at a time.
 
 <CardGrid>
+  <LinkCard title="Application Standard" description="The architecture, APIs, plugins and release process every X-app shares." href="/standards/application/" />
+  <LinkCard title="Design Guidelines" description="How every X-app looks and behaves." href="/standards/design/" />
   <LinkCard title="Extensible and interoperable" description="Let one project serve many needs." href="/guidelines/extensibility/" />
-  <LinkCard title="Consolidation" description="Bring competing projects together without losing their users." href="/guidelines/consolidation/" />
+  <LinkCard title="Consolidation" description="Bring the best of competing products together without losing their users." href="/guidelines/consolidation/" />
   <LinkCard title="Automation" description="Let CI/CD carry the routine work." href="/guidelines/automation/" />
   <LinkCard title="Test-driven development" description="Make tests the contract every change must meet." href="/guidelines/testing/" />
   <LinkCard title="Prompting guidelines for agents" description="Tell every AI agent how your project works." href="/guidelines/prompting/" />
   <LinkCard title="AI Readiness Score" description="Check how ready a project is for AI-assisted development." href="/guidelines/readiness/" />
 </CardGrid>
 
-## Our projects
+## Our apps
 
 <CardGrid>
   <LinkCard title="X-Backups" description="Borg backups for all your machines, from one web page." href="/projects/#x-backups" />
@@ -68,14 +70,14 @@ Practical mechanisms any project can adopt, one pillar at a time.
 2. **Be open about the tools.** Disclosure is normal and expected, never a mark against a contribution.
 3. **Tests before trust.** Code is accepted because it is verified, not because of who or what wrote it.
 4. **Readable by people.** All code stays simple enough for a person to review and maintain without AI.
-5. **Respect licences and upstreams.** Credit the projects we build on and bring together, and follow their licences.
+5. **Respect licences and upstreams.** Credit the products and projects we learn from and build on, and follow their licences.
 6. **Lighten the load on maintainers.** Automation and AI should reduce the work of reviewing contributions, not add to it.
-7. **Build together, not alone.** Improve a shared project before starting a new one, and build it to last beyond its first user.
-8. **Extend, don't fork.** Settle differences with plugins, settings and open formats, so one project can serve many needs.
-9. **Share what works.** The guidelines, templates and tooling we build are free software too.
+7. **Share before you build.** A feature two apps could use goes in the shared libraries, and an idea that fits an existing app becomes a feature, setting or plugin there instead of a new app.
+8. **Extend, don't fork.** Settle differences with plugins, settings and open formats, so one app can serve many needs.
+9. **Share what works.** The apps, libraries, guidelines and tooling we build are all free software.
 
 ## Get involved
 
-Read [how to get involved](/join), or see open source projects that already use AI in the open in
-[Awesome AI-Assisted Open Source](/awesome). Everything happens in the open at
+X-Tech is built first for its founder's own daily use, in the open. Use the apps, ask for what you
+need, or help build them: read [how to get involved](/join). Everything happens at
 [github.com/x-tech-laboratories](https://github.com/x-tech-laboratories).

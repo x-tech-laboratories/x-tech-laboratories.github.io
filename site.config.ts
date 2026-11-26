@@ -24,7 +24,7 @@ function readiness_badges(): ExtraFile[] {
 export default define_site({
 	title: 'X-Tech Laboratories',
 	description:
-		'An open source community for extensible, interoperable software, consolidated projects, automated development and AI used in the open.',
+		'An open source ecosystem of everyday apps that share one set of libraries, one design and one architecture, built with AI in the open.',
 	site: 'https://x-tech-laboratories.github.io',
 	content: 'src/content/docs',
 	logo: './org/branding/logo/x-tech-laboratories.svg',
