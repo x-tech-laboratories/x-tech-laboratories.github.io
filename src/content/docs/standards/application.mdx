@@ -125,6 +125,7 @@ Other programs reach an app's data as well as its own page does, so it can be sc
   * `GET /api/openapi.json`, an OpenAPI 3.1 document from `openapi_document`;
   * `/api/mcp`, every call as an MCP tool over streamable HTTP from X-Libs `server/mcp`, which wraps the official SDK (`@modelcontextprotocol/server`).
 * A call that only reads is named so (`list_`, `get_`, `search_` and the like) and is marked read-only to MCP clients. A change made through the API or MCP reaches open pages and devices as if made in the app.
+* A call or setting that only the user may change, such as a program's own rights or limits, is marked `page_only` in the app's `api_spec`. Where the answer depends on the arguments, such as writing one particular setting, the app gives `page_only_calls` a rule over them. Only a signed-in browser, or the desktop window through the daemon's socket, makes such a call: every token, a device's included, is refused, and MCP neither offers nor runs it. The OpenAPI document marks it. An app with nothing only the user may change marks nothing; the marking is for apps where a program or an AI client must not widen its own rights, such as CODEX's approvals and action policy. See [Accounts and signing in](#accounts-and-signing-in) for the tokens.
 * Values cross the API in the units the app stores, and the spec says which.
 * What the API returns leaves out keys and passwords for other services.
 * A local daemon that opens no network port offers MCP on 127.0.0.1 when the user turns it on.
@@ -175,6 +176,7 @@ Devices and programs:
 
 * A desktop or phone app that syncs signs in from `SyncSettings` with the same name and password, and gets a token of its own, named for the device. Stop syncing gives the token back.
 * A program uses a token made on Your account, read-only unless the user unticks that, sent as `Authorization: Bearer <token>`. A token cannot change the account it belongs to.
+* A token made when a device signs in for sync is a device's token, and one made on Your account is a program's token. X-Libs `server/account_store` keeps the difference as the token's `kind`, and `server/viewers`' `is_user_or_device` tells the user at the page or on one of their devices from a program. See [APIs and MCP](#apis-and-mcp) for the calls only the user may make.
 
 ## Settings, sync, backups and history
 
@@ -190,6 +192,7 @@ Sync:
 * Every copy of an app's data syncs: a local daemon with a remote daemon, and a phone's offline copy with a daemon, so the data is the same everywhere and each copy keeps working offline. A portal app, whose one daemon is the only copy, has nothing to sync. Sync goes through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the daemon others sync with, and `create_sync_client` on each local daemon or phone. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
 * The newest write of each value wins. The first time a device connects, the user chooses which copy wins, and the other is backed up before it is replaced.
 * A device keeps the server's address and token through `file_sync_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
+* The synced rows that hold settings only the user may change are named in `register_sync_routes`' `device_only`, so only the user's own devices sync them and a program's token cannot replace the server's data once that is set. See [APIs and MCP](#apis-and-mcp) for the calls.
 * The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync", where the device signs in with the user's name and password and asks before one copy replaces the other. A browser shows no sync section, since it is already on the daemon.
 * Every app that syncs shows `SyncButton` first in its sidebar's foot (the `Shell`'s `sidebar_foot`) on every device that syncs: whether the device is synced and how many changes wait to go out, syncing on a click, or opening the Sync settings when sync needs the user. It is always shown: while sync is not set up its label says "Sync not set up" and a click opens the Sync settings. A browser shows none, and an app does not draw its own.
 * A server whose https certificate the device refuses, such as a home server's self-signed one, is reached only after the user trusts it, through X-Libs' certificates. The dialog shows the certificate and what is wrong with it, and trusts that exact certificate for that host alone. The desktop keeps them with `create_certificate_trust`, honours them with `trust_in_session`, and sends sync through `trusting_fetch`. A phone uses `phone_certificates`, whose plugin lets the WebView through. The page passes `certificates` to `SyncSettings`, places `SyncCertificatePrompt` once, and lists `TrustedCertificates` in the Sync section. An app never turns certificate checks off, trusts a whole authority for every host, or writes its own certificate handling.
@@ -539,6 +542,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Imports Halon's tokens and stylesheet once; `app.css` holds layout only.
 * [ ] Signing in uses the X-Libs accounts (`register_accounts`, `SignInForm`, `AccountView`, `users_settings`) and says "Sign in" and "Sign out"; agents use the X-Libs agent modules.
 * [ ] Every call has an `api_spec` entry, and the server offers `/api/openapi.json` and `/api/mcp`.
+* [ ] An app with calls or settings that only the user may change marks them `page_only`, and names the synced rows they live in in `device_only`.
 * [ ] The app answers `list_item_kinds`, `search_items`, `get_items` and `list_item_changes`, and its item links are `x-<app>://<kind>/<id>`.
 * [ ] A Settings page in the sidebar's foot, with Users and Tokens sections for an admin, and a History page in the sidebar.
 * [ ] Data syncs between the server and every device through the X-Libs sync modules.
