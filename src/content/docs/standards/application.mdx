@@ -129,6 +129,22 @@ Other programs reach an app's data as well as its own page does, so it can be sc
 * What the API returns leaves out keys and passwords for other services.
 * A local daemon that opens no network port offers MCP on 127.0.0.1 when the user turns it on.
 
+Items for other apps:
+
+Every app answers the same four read-only calls about the items it holds, so another app, such as an assistant that gathers a user's tasks, notes and bookmarks, reads every app with one piece of code and without knowing its other calls.
+
+* `list_item_kinds()` names the kinds of item the app holds, each with a label, such as `task` and "Task".
+* `search_items(query, limit)` finds items by the text given, best first.
+* `get_items(ids)` gives the items with those ids as they are now. An id left out of the answer is gone from the app.
+* `list_item_changes(since, limit)` gives the items changed after the moment `since`, oldest first, deleted ones included. A caller that keeps the moment of the last change it saw misses nothing.
+* All four answer with one shape for an item: `id`, `kind`, `title`, `snippet`, `link`, `status`, `changed_at`, and `detail` for anything more the app wants to say, as text by name.
+  * `id` is the item's own across the whole app, and is never given to another item. An app whose ids are only its own within a kind puts the kind in front.
+  * `kind` is one of the app's kinds, a plain word in the singular.
+  * `snippet` is plain text of 200 characters at most, and `status` is a plain word such as `done`, empty for a kind that has none.
+  * A deleted item in `list_item_changes` carries its `id`, its `kind` and `is_deleted`.
+* An item's `link` is `x-<app>://<kind>/<id>`, the id percent-encoded. Opening it opens the app on that item. The desktop app registers the scheme, and a notification about an item opens the same link.
+* These calls give what the user's token may read and nothing else, and a read-only token is enough for them.
+
 ## Accounts and signing in
 
 Every app whose users sign in does it the same way, so a user meets one sign-in page, one account page and one set of words in every app. The modules are `server/account_store` and `server/account_sign_in` on the server, and `web/accounts`, `web/react/sign_in` and `web/react/accounts` on the page.
@@ -473,6 +489,8 @@ Delivery:
 
 Each app as it is today. The [Standards Matrix](/standards/matrix) shows which parts of this standard each app meets.
 
+No app answers the item calls in [APIs and MCP](#apis-and-mcp) yet. X-Libs gains the shared shapes first, then each app follows when it is next touched.
+
 | App | Stack today | Target | Gap |
 | --- | --- | --- | --- |
 | X-Backups | TypeScript, Fastify 5 on X-Libs' server modules, Vite 8, React 19, on X-Libs 0.33 and Halon 0.11, released as 0.3.0 | web (Fastify + React) and agent | none |
@@ -521,6 +539,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Imports Halon's tokens and stylesheet once; `app.css` holds layout only.
 * [ ] Signing in uses the X-Libs accounts (`register_accounts`, `SignInForm`, `AccountView`, `users_settings`) and says "Sign in" and "Sign out"; agents use the X-Libs agent modules.
 * [ ] Every call has an `api_spec` entry, and the server offers `/api/openapi.json` and `/api/mcp`.
+* [ ] The app answers `list_item_kinds`, `search_items`, `get_items` and `list_item_changes`, and its item links are `x-<app>://<kind>/<id>`.
 * [ ] A Settings page in the sidebar's foot, with Users and Tokens sections for an admin, and a History page in the sidebar.
 * [ ] Data syncs between the server and every device through the X-Libs sync modules.
 * [ ] An app that syncs shows `SyncButton` in its sidebar's foot on every device that syncs.
