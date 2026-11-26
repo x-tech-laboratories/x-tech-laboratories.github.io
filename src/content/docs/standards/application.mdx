@@ -118,12 +118,12 @@ The shared pieces are in X-Libs: `local_daemon` for the socket, the calls over i
 
 Other programs reach an app's data as well as its own page does, so it can be scripted, linked to other tools and used by an AI client. Every daemon:
 
-* Every call the page makes is open to other programs through the server's API, behind the same sign-in. A program sends a token made on the user's account page as a bearer header.
+* Every call the page makes, except calls marked `page_only`, is open to other programs through the server's API, behind the same sign-in. A program sends a token made on the user's account page as a bearer header.
 * Every call is described once in an X-Libs `api_spec`: what it does in plain words, and a JSON Schema for each argument. The spec is typed against the app's method table, so a call without one fails to compile.
 * The server serves the same calls three ways from that one spec:
-  * the app's own API, which takes the arguments as a list in order or by name as a JSON object;
+  * the app's own API, `POST /api/call/<method>` for every app, which takes the arguments as a JSON list in order or by name as a JSON object;
   * `GET /api/openapi.json`, an OpenAPI 3.1 document from `openapi_document`;
-  * `/api/mcp`, every call as an MCP tool over streamable HTTP from X-Libs `server/mcp`, which wraps the official SDK (`@modelcontextprotocol/server`).
+  * `/api/mcp`, every call except calls marked `page_only` as an MCP tool over streamable HTTP from X-Libs `server/mcp`, which wraps the official SDK (`@modelcontextprotocol/server`).
 * A call that only reads is named so (`list_`, `get_`, `search_` and the like) and is marked read-only to MCP clients. A change made through the API or MCP reaches open pages and devices as if made in the app.
 * A call or setting that only the user may change, such as a program's own rights or limits, is marked `page_only` in the app's `api_spec`. Where the answer depends on the arguments, such as writing one particular setting, the app gives `page_only_calls` a rule over them. Only a signed-in browser, or the desktop window through the daemon's socket, makes such a call: every token, a device's included, is refused, and MCP neither offers nor runs it. The OpenAPI document marks it. An app with nothing only the user may change marks nothing; the marking is for apps where a program or an AI client must not widen its own rights, such as CODEX's approvals and action policy. See [Accounts and signing in](#accounts-and-signing-in) for the tokens.
 * Values cross the API in the units the app stores, and the spec says which.
@@ -541,7 +541,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Depends on `@x-tech-laboratories/x-libs` and `@x-tech-laboratories/halon`; no re-implemented sign-in, agent, formatting, widget or theme code.
 * [ ] Imports Halon's tokens and stylesheet once; `app.css` holds layout only.
 * [ ] Signing in uses the X-Libs accounts (`register_accounts`, `SignInForm`, `AccountView`, `users_settings`) and says "Sign in" and "Sign out"; agents use the X-Libs agent modules.
-* [ ] Every call has an `api_spec` entry, and the server offers `/api/openapi.json` and `/api/mcp`.
+* [ ] Every call has an `api_spec` entry, and the server answers it at `POST /api/call/<method>` and offers `/api/openapi.json` and `/api/mcp`.
 * [ ] An app with calls or settings that only the user may change marks them `page_only`, and names the synced rows they live in in `device_only`.
 * [ ] The app answers `list_item_kinds`, `search_items`, `get_items` and `list_item_changes`, and its item links are `x-<app>://<kind>/<id>`.
 * [ ] A Settings page in the sidebar's foot, with Users and Tokens sections for an admin, and a History page in the sidebar.
