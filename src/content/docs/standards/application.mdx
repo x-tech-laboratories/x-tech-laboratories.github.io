@@ -132,19 +132,25 @@ Other programs reach an app's data as well as its own page does, so it can be sc
 
 Items for other apps:
 
-Every app answers the same four read-only calls about the items it holds, so another app, such as an assistant that gathers a user's tasks, notes and bookmarks, reads every app with one piece of code and without knowing its other calls.
+Every app answers the same four read-only calls about the items it holds, and a fifth, optional one for their full text, so another app, such as an assistant that gathers a user's tasks, notes and bookmarks, reads every app with one piece of code and without knowing its other calls.
 
-* `list_item_kinds()` names the kinds of item the app holds, each with a label, such as `task` and "Task".
+* `list_item_kinds()` names the kinds of item the app holds, each with a label, such as `task` and "Task", and `has_text`, true when items of that kind can have text beyond their snippet. A kind that leaves `has_text` out has none.
 * `search_items(query, limit)` finds items by the text given, best first.
 * `get_items(ids)` gives the items with those ids as they are now. An id left out of the answer is gone from the app.
 * `list_item_changes(since, limit)` gives the items changed after the moment `since`, oldest first, deleted ones included. A caller that keeps the moment of the last change it saw misses nothing.
-* All four answer with one shape for an item: `id`, `kind`, `title`, `snippet`, `link`, `status`, `changed_at`, and `detail` for anything more the app wants to say, as text by name.
+* `get_item_texts(ids)` gives the full text of the items with those ids, such as a task's notes or a note's body. An app whose items have no text beyond their snippet does not answer it, and each of its kinds has `has_text` false or leaves it out.
+  * Each answer carries the item's `id`, `text`, `format`, `changed_at` and `is_truncated`.
+  * `format` is `plain` or `markdown`. An app turns its own HTML or rich text into one of them, so a caller never reads an app's own format.
+  * An item's text is 256 KB at most, cut at the end of a character, and `is_truncated` is true when it was cut. The call takes no more ids than `get_items` does.
+  * An id that is gone, unknown or has no text is left out of the answer.
+  * The text is a call of its own so that the other four stay cheap: a caller asks for the text of an item only when its `changed_at` has moved since it last read it.
+* The first four answer with one shape for an item: `id`, `kind`, `title`, `snippet`, `link`, `status`, `changed_at`, and `detail` for anything more the app wants to say, as text by name.
   * `id` is the item's own across the whole app, and is never given to another item. An app whose ids are only its own within a kind puts the kind in front.
   * `kind` is one of the app's kinds, a plain word in the singular.
   * `snippet` is plain text of 200 characters at most, and `status` is a plain word such as `done`, empty for a kind that has none.
   * A deleted item in `list_item_changes` carries its `id`, its `kind` and `is_deleted`.
 * An item's `link` is `x-<app>://<kind>/<id>`, the id percent-encoded. Opening it opens the app on that item. The desktop app registers the scheme, and a notification about an item opens the same link.
-* These calls give what the user's token may read and nothing else, and a read-only token is enough for them.
+* These calls give what the user's token may read and nothing else, and a read-only token is enough for them. An item's text leaves out keys and passwords for other services, like everything else the API returns.
 
 ## Accounts and signing in
 
@@ -543,7 +549,7 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] Signing in uses the X-Libs accounts (`register_accounts`, `SignInForm`, `AccountView`, `users_settings`) and says "Sign in" and "Sign out"; agents use the X-Libs agent modules.
 * [ ] Every call has an `api_spec` entry, and the server answers it at `POST /api/call/<method>` and offers `/api/openapi.json` and `/api/mcp`.
 * [ ] An app with calls or settings that only the user may change marks them `page_only`, and names the synced rows they live in in `device_only`.
-* [ ] The app answers `list_item_kinds`, `search_items`, `get_items` and `list_item_changes`, and its item links are `x-<app>://<kind>/<id>`.
+* [ ] The app answers `list_item_kinds`, `search_items`, `get_items` and `list_item_changes`, and `get_item_texts` when its items have text beyond their snippet, and its item links are `x-<app>://<kind>/<id>`.
 * [ ] A Settings page in the sidebar's foot, with Users and Tokens sections for an admin, and a History page in the sidebar.
 * [ ] Data syncs between the server and every device through the X-Libs sync modules.
 * [ ] An app that syncs shows `SyncButton` in its sidebar's foot on every device that syncs.
