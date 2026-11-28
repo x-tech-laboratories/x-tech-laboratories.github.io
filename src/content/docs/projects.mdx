@@ -13,7 +13,7 @@ software under the GPL, version 3 or later.
 | [X-Backups](#x-backups) | Borg backups for all your machines, from one web page | Usable |
 | [X-Budget](#x-budget) | A monthly budget, planned once and measured every month | Work in progress |
 | [X-Fitness](#x-fitness) | Workouts, diet and body measurements in one app | Usable |
-| [X-Libs](#x-libs) | The shared library every X-app is built on | Usable |
+| [X-App](#x-app) | The base app and shared library every X-app is built on | Usable |
 | [X-Login](#x-login) | A LightDM login screen drawn as a web page, packaged for NixOS | Usable |
 | [X-Media-Tracker](#x-media-tracker) | Your movies and TV shows, watched and still to watch | Usable |
 | [X-Monitor](#x-monitor) | A network and system monitor for Linux | Usable |
@@ -72,18 +72,22 @@ for every item all work.
 
 [Source code](https://github.com/x-tech-laboratories/X-Fitness)
 
-## X-Libs
+## X-App
 
-[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-Libs.json)](/guidelines/readiness/)
+[![AI readiness](https://img.shields.io/endpoint?url=https://x-tech-laboratories.github.io/badges/x-tech-laboratories/X-App.json)](/guidelines/readiness/)
 
-**The shared library every X-app is built on.** One npm package, `@x-tech-laboratories/x-libs`,
-with about a hundred modules: accounts and sign-in, SQLite sync, history and backups, plugins,
-Electron and Android helpers, a set of React widgets drawn with the Halon theme, and the framework
-this website is built with. When one app builds something another could use, it moves here.
+**The base app and shared library every X-app is built on.** One npm package,
+`@x-tech-laboratories/x-app`, formerly X-Libs. It runs an app's server, daemon, desktop and phone
+from the app's one definition, with the layout, the Settings and History pages, config presets, a
+Nix lib, CI actions and the Android project. It also has about a hundred modules: accounts and
+sign-in, SQLite sync, history and backups, plugins, a set of React widgets drawn with the Halon
+theme, and the framework this website is built with. When one app builds something another could
+use, it moves here.
 
-**Status: usable.** It is released and used by every X-app. More pieces from the apps are moving in.
+**Status: usable.** It is released and used by every X-app; X-Budget runs on the base app, and the
+other apps are moving onto it.
 
-[Source code](https://github.com/x-tech-laboratories/X-Libs)
+[Source code](https://github.com/x-tech-laboratories/X-App)
 
 ## X-Login
 

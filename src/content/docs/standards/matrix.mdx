@@ -25,7 +25,7 @@ from each app's code on its `main` branch. Each column links to the part of the 
 Every app's CI builds, tests and lints each pull request, but none publishes releases from a version tag yet, so CI/CD is partly met everywhere; X-Tasks comes closest, building its Android and desktop packages on every push. No app's CI checks a coverage floor yet.
 
 Libraries and components whose host fixes their shape follow only the parts that apply to them, as
-the standard's scope sets out, and are left out of the matrix: X-Libs, Halon, RoboBuddy,
+the standard's scope sets out, and are left out of the matrix: X-App, Halon, RoboBuddy,
 ai-readiness, MOSAIC, X-Login and X-Plymouth.
 
 ## What each app still lacks
@@ -59,7 +59,7 @@ ai-readiness, MOSAIC, X-Login and X-Plymouth.
 
 - Platforms: web only; no desktop or Android app.
 - Settings: a sidebar row of its own instead of the sidebar's foot.
-- Sync: its own record sync, not the X-Libs sync modules.
+- Sync: its own record sync, not the X-App sync modules.
 - History: an event log, but no `create_history` and no History page.
 - Import + Export: not started.
 
@@ -80,7 +80,7 @@ ai-readiness, MOSAIC, X-Login and X-Plymouth.
 
 ### X-Stream
 
-- Stack: on older X-Libs and Halon, and also uses PouchDB beside its SQLite store.
+- Stack: on older X-App and Halon, and also uses PouchDB beside its SQLite store.
 - Daemon + UI: work runs in Electron's main process and the page, with no daemon.
 - Platforms: desktop only; its README plans a React Native phone app, which the standard does not
   use.
@@ -94,17 +94,17 @@ ai-readiness, MOSAIC, X-Login and X-Plymouth.
 - API + MCP: its own MCP server on a port of its own, not `api_spec`, and no `/api/openapi.json`.
 - Import + Export: the worklog saves to a file; nothing else exports or imports.
 - Plugins: not started.
-- Notifications: desktop and phone notifications work; the server sends none through the X-Libs
+- Notifications: desktop and phone notifications work; the server sends none through the X-App
   channels, and there is no Notifications settings section.
 
 ### CODEX
 
 - Stack: Electron only, with no server.
-- Daemon + UI: a daemon on its own socket client, not X-Libs' `local_daemon`.
+- Daemon + UI: a daemon on its own socket client, not X-App's `local_daemon`.
 - Platforms: desktop only.
 - API + MCP: uses other programs' MCP tools but offers none of its own.
 - Settings: an options view, not a `SettingsPage` in the sidebar's foot.
-- Notifications: Electron's own notifications from the main process, not X-Libs' `desktop_notify`
+- Notifications: Electron's own notifications from the main process, not X-App's `desktop_notify`
   from the daemon.
 - Sync, History, Import + Export, Plugins: not started.
 - Branding: the name lacks the `X-` prefix.

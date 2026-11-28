@@ -1,4 +1,4 @@
-// The site's settings for the X-Libs site framework: its title, languages, sidebar, look and the badge files it adds.
+// The site's settings for the X-App site framework: its title, languages, sidebar, look and the badge files it adds.
 import { readFileSync } from 'node:fs';
 import { define_site, type ExtraFile } from '@x-tech-laboratories/x-libs/site/model';
 
