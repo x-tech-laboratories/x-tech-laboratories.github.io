@@ -338,18 +338,17 @@ docs/        written documentation
 .github/workflows/dependabot-auto-merge.yml
 .github/dependabot.yml
 .oxlintrc.json  (optional)
-nix/         package.nix, module.nix, agent-module.nix
-flake.nix
-shell.nix
+nix/         flake.nix, flake.lock, shell.nix, package.nix, module.nix, agent-module.nix
+tsconfig/    tsconfig.base.json, tsconfig.server.json, tsconfig.web.json
 config.example.json
-tsconfig.json  tsconfig.server.json  tsconfig.web.json
+tsconfig.json
 vite.config.ts
 ```
 
 * A desktop app adds `src/main` and `src/preload` and builds with `electron.vite.config.ts`; its local daemon is the same `src/server` program. A mobile app adds `capacitor.config.json` and the generated `android/` project. A target the app does not have gets no folder.
-* `tsconfig.json` holds `references` only. Each target has its own `tsconfig.<target>.json`: `server` and `agent` use the Node types; `web` uses `jsx: react-jsx`, the `DOM` lib and `vite/client`.
+* `tsconfig.json` at the root holds `references` only, since editors and `tsc -b` look for it there. The base and each target's `tsconfig.<target>.json` sit in `tsconfig/`, with their `include` paths starting `../`: `server` and `agent` use the Node types; `web` uses `jsx: react-jsx`, the `DOM` lib and `vite/client`.
 * `config.example.json` is the complete, working default config. `dev:server` runs against it.
-* `nix/` holds the package and the NixOS modules. `flake.nix` exposes the package, the modules and a dev shell. `shell.nix` serves `nix-shell`.
+* `nix/` holds everything Nix: the package, the NixOS modules, `flake.nix` with its `flake.lock`, and `shell.nix`. The flake exposes the package, the modules and a dev shell, and is reached with `?dir=nix` (`github:x-tech-laboratories/X-Foo?dir=nix`, `nix build ./nix#default`, `nix develop ./nix`). `nix-shell nix/shell.nix` gives the same shell without flakes.
 * `docs/` holds anything longer than the README.
 
 Script names, the same in every app:
@@ -384,7 +383,7 @@ An app adds its own commands (`hash-password`, `seed`) beside these and does not
 * Secrets never sit in the repo, in config examples or in logs. A config names a file that holds the secret.
 * Licence: GPL-3.0-or-later in `package.json` and in `LICENSE`.
 * Commits use Conventional Commits (`feat(web): ...`, `fix(agent): ...`, `refactor: ...`). A breaking change uses `!`. A commit made with a tool's help carries an `Assisted-by` trailer naming it.
-* The dev environment is the Nix flake or shell. `nix-shell` gives Node and the tools the tests need.
+* The dev environment is the Nix flake or shell. `nix-shell nix/shell.nix` (or `nix develop ./nix`) gives Node and the tools the tests need.
 
 ## Testing, CI and delivery
 
@@ -438,7 +437,7 @@ test: {
 Where it runs:
 
 * Local runs cover only the files changed, plus one `npm run coverage` before a pull request to commit a raised floor. CI runs the whole suite.
-* CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main`, on pull requests and on `workflow_dispatch`: Node 24, `npm ci`, `npm run build`, `npm run coverage`, a check that the floor in `vitest.config.ts` is committed, `npm run lint`. X-Libs carries it. An app with a flake adds a `nix` job that runs `nix build .#default`, since that package is what TechNet deploys.
+* CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main`, on pull requests and on `workflow_dispatch`: Node 24, `npm ci`, `npm run build`, `npm run coverage`, a check that the floor in `vitest.config.ts` is committed, `npm run lint`. X-Libs carries it. An app with a flake adds a `nix` job that runs `nix build ./nix#default`, since that package is what TechNet deploys.
 * A pull request fails when coverage drops below the floor, and when it raises coverage past the floor without committing the new one.
 * `main` takes changes only through pull requests whose CI passes: a "Protect main" ruleset blocks deletion and force pushes, requires a pull request, and requires the CI job and the `nix` job, and the repository allows auto-merge.
 * Dependabot keeps the npm dependencies current: `.github/dependabot.yml` has a weekly `npm` entry with two groups, `x-tech` for `@x-tech-laboratories/*`, so the Halon peer of X-Libs moves with it, and `npm` for third-party patch and minor updates; a third-party major update comes in its own pull request. The entry exempts `@x-tech-laboratories/*` from Dependabot's cooldown (`cooldown: exclude: ["@x-tech-laboratories/*"]`), which would otherwise hold back every release for three days; revisit that once X-Libs stabilizes and releases slow down. X-Libs carries the same file.
@@ -536,12 +535,12 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 
 * [ ] Name follows the [Design Guidelines](/standards/design) (`X-<Word>`).
 * [ ] `resources/icon.svg` is an X-Tech style icon, and the desktop, Android and web icons are generated from it.
-* [ ] Repo has `LICENSE` (GPL-3.0-or-later), `README.md`, `flake.nix`, `shell.nix`.
+* [ ] Repo has `LICENSE` (GPL-3.0-or-later), `README.md`, `nix/flake.nix`, `nix/shell.nix`.
 * [ ] `package.json`: `"engines": { "node": ">=24" }`, `"license": "GPL-3.0-or-later"`, ESM.
 * [ ] Layout is `src/server|web|agent|shared`, plus `src/main|preload` for desktop, `tests/`, `docs/`, `nix/`.
 * [ ] The app ships on the web, the desktop and Android from one `src/web` tree, or its `README.md` names the limit that rules a target out.
 * [ ] All of the app's work runs in one daemon that runs on any host; the web, desktop and Android apps are UIs that connect to a local or a remote daemon, and a portal app's UIs connect only to a remote one.
-* [ ] `tsconfig.json` references one config per target, each with the strict flags from `tsconfig.base.json`.
+* [ ] The root `tsconfig.json` references one `tsconfig/tsconfig.<target>.json` per target, each with the strict flags from `tsconfig/tsconfig.base.json`.
 * [ ] Scripts `dev:server`, `dev:web`, `build`, `start`, `test`, `coverage`, `lint` exist and use the standard commands.
 * [ ] `config.example.json` runs the app as it stands.
 * [ ] Depends on `@x-tech-laboratories/x-libs` and `@x-tech-laboratories/halon`; no re-implemented sign-in, agent, formatting, widget or theme code.
