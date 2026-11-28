@@ -246,7 +246,7 @@ X-App is the base every app is built on. Besides the shared modules and widgets,
 * `define_app` names the app, its port, its features, its pages, its notifications and its plugins. A feature brings its tables, migrations, calls, their `api_spec`, setting defaults and histories; a page brings a sidebar entry, a view and settings sections.
 * `run_server(app)`, `run_daemon(app)`, `run_desktop(app)`, `run_preload(app)` and `render_app(app_pages)` are an app's entry points, one line each.
 * An app changes the base through slots for the layout's parts and hooks on the server, the daemon and the desktop process. When it needs a hook that does not exist, X-App gains it; an app never keeps a copy of a base file.
-* X-App's presets carry the configs (`config/tsconfig/*.json` to extend, and `web_vite_config`, `android_vite_config`, `desktop_vite_config` and `vitest_config`), its flake's `lib` carries the Nix packages, module and shells, and its composite actions (`app-ci`, `app-nix`, `app-dependabot-auto-merge`) carry CI and Dependabot's auto-merge.
+* X-App's presets carry the configs (`config/tsconfig/*.json` to extend, and `web_vite_config`, `android_vite_config`, `desktop_vite_config` and `vitest_config`), its flake's `lib` carries the Nix packages, module and shells, its `x-app-android` command makes and updates the Android project, and its composite actions (`app-ci`, `app-nix`, `app-android`, `app-dependabot-auto-merge`) carry CI, the Android release and Dependabot's auto-merge.
 * A new app starts from `npx x-app-new X-Foo`, which writes these few files once.
 
 Comes from X-App:
@@ -353,7 +353,8 @@ src/
   shared/    types and protocol used by more than one of the above
 tests/       one *.test.ts per behaviour, mirroring src/
 docs/        written documentation
-.github/workflows/ci.yml                     a ci job running X-App's app-ci action, a nix job its app-nix action
+.github/workflows/ci.yml                     a ci job running X-App's app-ci action, a nix job its app-nix action,
+                                             an android job its app-android action
 .github/workflows/dependabot-auto-merge.yml  runs X-App's app-dependabot-auto-merge action
 .github/dependabot.yml
 .oxlintrc.json  (optional)
@@ -364,7 +365,7 @@ package.json
 tsconfig.json
 ```
 
-* A desktop app adds `src/daemon`, `src/main` and `src/preload`, each a call into X-App, and builds with `config/electron.vite.config.ts`. A mobile app adds `config/vite.android.config.ts`, `capacitor.config.json` at the root and the generated `android/` project. A target the app does not have gets no folder.
+* A desktop app adds `src/daemon`, `src/main` and `src/preload`, each a call into X-App, and builds with `config/electron.vite.config.ts`. A mobile app adds `config/vite.android.config.ts` and `capacitor.config.json` at the root; its `build:android` script runs X-App's `x-app-android`, which makes the Capacitor project in `android/` from Capacitor's template, applies X-App's release settings and icons and syncs the page into it, so `android/` is generated on each build and kept out of git. A target the app does not have gets no folder.
 * `config/` holds every tool's config, and the npm scripts pass each with `-c` or `--config`. Only what the tools read from the root alone stays there: `package.json`, `tsconfig.json` and `capacitor.config.json`.
 * `tsconfig.json` at the root holds `references` only, since editors and `tsc -b` look for it there. The base and each target's `tsconfig.<target>.json` sit in `config/`, with their `include` paths starting `../`: `server` and `agent` use the Node types; `web` uses `jsx: react-jsx`, the `DOM` lib and `vite/client`.
 * `config.example.json` is the complete, working default config. `dev:server` runs against it.
@@ -474,6 +475,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -490,6 +492,19 @@ jobs:
       - uses: x-tech-laboratories/X-App/.github/actions/app-nix@main
         with:
           targets: ./nix#default ./nix#desktop
+
+  android:
+    needs: ci
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: x-tech-laboratories/X-App/.github/actions/app-android@main
+        with:
+          keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          key-alias: ${{ secrets.ANDROID_KEY_ALIAS }}
 ```
 
 Dev dependencies every repo carries for this:
@@ -500,7 +515,7 @@ Dev dependencies every repo carries for this:
 Delivery:
 
 * Every push to `main` builds every target the app ships in CI, once its tests pass: the web build and server package, the desktop installers and the Android package, kept as the run's artifacts.
-* A version tag such as `v1.2.3` publishes those builds as a GitHub release. The Android package is signed with a key kept in the repository's secrets.
+* A version tag such as `v1.2.3` publishes those builds as a GitHub release. The Android package is built by X-App's `app-android` action and signed with a key kept in the repository's `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS` secrets; a build without them stays unsigned, and a tag fails rather than publish it.
 * Releases are made by CI only, never from a developer's machine, so every release is built from a commit that passed its tests.
 * A library publishes its package from its version tag the same way.
 
