@@ -6,7 +6,7 @@
 
 Source for <https://x-tech-laboratories.github.io>, the home page of the X-Tech Laboratories community.
 
-Built with the [X-Libs site framework](https://github.com/x-tech-laboratories/X-Libs#a-static-site) and drawn in
+Built with the [X-App site framework](https://github.com/x-tech-laboratories/X-App#a-static-site) and drawn in
 [Halon](https://github.com/x-tech-laboratories/X-Themes/tree/main/halon), like the X-apps. Pages are MDX files in
 `src/content/docs/`, Spanish translations in `src/content/docs/es/`, and the sidebar and languages are set in
 `site.config.ts`. Search, each page's outline, the language picker and the light and dark themes come with the framework.
