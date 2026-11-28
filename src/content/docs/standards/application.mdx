@@ -98,6 +98,11 @@ Portals and personal apps:
 * An app whose daemon belongs on one host, such as X-Nix, X-Backups or X-Monitor, which manage other machines, offers no "This computer": its desktop and Android apps are portals onto a remote daemon and never run one of their own.
 * A personal app, such as X-Tasks, X-Fitness, X-Budget or X-Media-Tracker, offers "This computer". Its local daemon can sync with a remote daemon through the X-Libs sync modules, so a laptop keeps working offline and catches up when it reconnects.
 
+Work that belongs to the device:
+
+* Some work must happen on the device in front of the user whichever daemon its UI uses: playing sound or video, reading what other programs keep on this computer, such as Lutris's or Steam's game lists, and starting a program here. A personal app runs that work in its local daemon, under tables of its own that the main process sends there even while a remote daemon is chosen, as it does the device's sync and certificates. What the work finds or does reaches the chosen daemon through the page's ordinary calls.
+* A portal app has no local daemon, so its device work stays in the main process, kept to what needs this computer. An Android app does it through Capacitor plugins.
+
 How a local daemon talks:
 
 * It serves the same calls over HTTP on a Unix socket, `$XDG_RUNTIME_DIR/<app>/daemon.sock`, readable by its user alone, so a UI on the same machine needs no sign-in.
@@ -112,7 +117,7 @@ Starting and stopping a local daemon:
 * Closing the window ends only the window. The tray icon, where the app has one, keeps the main process open. The daemon keeps running until the user stops it from Settings or the tray, or turns off "Keep running in the background", after which it stops once the last window has closed.
 * The daemon sends the app's desktop notifications, as [Notifications](#notifications) sets out.
 
-The shared pieces are in X-Libs: `local_daemon` for the socket, the calls over it, the events and starting the daemon, `server/call_table` for serving a table of calls on it, `autostart` for the login entry, `electron/tray` for the tray icon, and `agent/scheduled_notices` for reminders due at set moments.
+The shared pieces are in X-Libs: `local_daemon` for the socket, the calls over it, the events and starting the daemon, `connections`, `daemon_link` and `daemon_router` for the list of daemons and a main process that forwards to the chosen one, `server/call_table` for serving a table of calls on it, `autostart` for the login entry, `electron/tray` for the tray icon, and `agent/scheduled_notices` for reminders due at set moments.
 
 ## APIs and MCP
 
