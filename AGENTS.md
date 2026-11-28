@@ -1,6 +1,6 @@
 # Instructions for AI agents
 
-This repository is the X-Tech Laboratories website, a static site built with the X-Libs site framework (`x-libs-site`).
+This repository is the X-Tech Laboratories website, a static site built with the X-App site framework (`x-libs-site`).
 
 - Page content lives in `src/content/docs/` as MDX; the frontmatter `title` is the page heading, so do not add an H1.
 - Translations live in `src/content/docs/<locale>/` at the same path as the English page; a page with no translation is
@@ -22,7 +22,7 @@ This repository is the X-Tech Laboratories website, a static site built with the
   [Design Guidelines](https://x-tech-laboratories.github.io/standards/design/), whose source is `src/content/docs/standards/`
   in [x-tech-laboratories.github.io](https://github.com/x-tech-laboratories/x-tech-laboratories.github.io). Ask before
   changing either, since a change applies to every X-app.
-- Use [X-Libs](https://github.com/x-tech-laboratories/X-Libs) and Halon ([X-Themes](https://github.com/x-tech-laboratories/X-Themes))
-  before writing your own code: check the module table in the X-Libs README first.
-- A feature another app could use belongs in X-Libs, or Halon for styling, with tests and a README row. If that is out
-  of reach, add it to the candidates in X-Libs' `docs/TODO.md`.
+- Use [X-App](https://github.com/x-tech-laboratories/X-App) and Halon ([X-Themes](https://github.com/x-tech-laboratories/X-Themes))
+  before writing your own code: check the module table in the X-App README first.
+- A feature another app could use belongs in X-App, or Halon for styling, with tests and a README row. If that is out
+  of reach, add it to the candidates in X-App's `docs/TODO.md`.
