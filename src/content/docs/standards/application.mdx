@@ -4,14 +4,14 @@ sidebar:
   order: 1
 ---
 
-How X-Tech applications are built. Every app follows it where possible, so the shared code in X-Libs and the shared styling in Halon serve all of them.
+How X-Tech applications are built. Every app follows it where possible, so the shared code in X-App and the shared styling in Halon serve all of them.
 
 ## Purpose and scope
 
 * Every X-Tech app is written in TypeScript on Node with React.
-* The web app is the primary target. Desktop and mobile wrap the same React page, so every target shows the same X-Libs widgets.
+* The web app is the primary target. Desktop and mobile wrap the same React page, so every target shows the same X-App widgets.
 * Every app runs on the web, the desktop and Android, does its work in a daemon apart from its UI, syncs, takes plugins, notifies its user, imports and exports its data and settings, and is tested and released by CI against a coverage floor that only rises, as the sections below set out.
-* One widget set, one agent and server stack and one toolchain are shared across apps. This is what lets X-Libs be used in full.
+* One widget set, one agent and server stack and one toolchain are shared across apps. This is what lets X-App be used in full.
 * The standard covers new apps and rewrites. An existing app moves over in the order given under Current state.
 * Exceptions stay as they are until they are rewritten:
   * a Python app with no UI of its own (a daemon, an experiment, a training pipeline);
@@ -29,7 +29,7 @@ How X-Tech applications are built. Every app follows it where possible, so the s
 | Desktop app     | Electron built with electron-vite, wrapping the same React UI                          |
 | Mobile app      | Capacitor, wrapping the same React UI                                                  |
 | Linux phone app | X-WebView, running the desktop app's Electron build on the system WebKit               |
-| CLI and agent   | Node script in TypeScript, built on the X-Libs `agent` modules                         |
+| CLI and agent   | Node script in TypeScript, built on the X-App `agent` modules                         |
 
 Versions floor:
 
@@ -46,21 +46,21 @@ Versions floor:
 Rules per target:
 
 * The web, desktop and mobile apps share one `src/web` React tree, and each is a UI onto a daemon, as [Daemon and UI](#daemon-and-ui) sets out. The desktop app loads the tree in the renderer and reaches a daemon through a preload bridge and the main process.
-* A mobile app loads the built `src/web` page in Capacitor and reaches a daemon over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-Libs when a second app needs them.
+* A mobile app loads the built `src/web` page in Capacitor and reaches a daemon over its API. Phone features such as the camera or notifications come through Capacitor plugins, wrapped in X-App when a second app needs them.
 * A Linux phone app is the desktop app's built main process, preload and page, run unchanged by [X-WebView](https://github.com/x-tech-laboratories/X-WebView) on the system WebKitGTK instead of Chromium, so it draws through the GPU on phones Chromium cannot use, such as the PinePhone's OpenGL ES 2.0 Mali-400. The app's flake packages it with X-WebView's `lib.wrap_app`, which bundles its preload at build time. Like the desktop app, it runs a local daemon or connects to a remote one.
-* A page works at phone width, through the X-Libs `Shell` and the widgets' phone layouts.
+* A page works at phone width, through the X-App `Shell` and the widgets' phone layouts.
 * Every app's sidebar ends in the same foot, drawn by the `Shell` and pinned to the sidebar's bottom while the rows above it scroll: the sync button in an app that syncs, then the app's other rows, then the theme, then the signed-in user and Sign out, then Settings, last. None of these sits in the top bar, which holds only the brand and the app's tools.
 * The daemon owns the app's storage, a JSON store or SQLite as the data needs; every UI and agent reaches it only through a daemon.
-* A phone app that must work offline keeps its own SQLite copy and syncs it with a daemon through the X-Libs sync modules; its page reaches that copy only through the app's bridge.
+* A phone app that must work offline keeps its own SQLite copy and syncs it with a daemon through the X-App sync modules; its page reaches that copy only through the app's bridge.
 * A daemon or an agent never shells out when a Node API does the job.
 
 Data and migrations (an app with a SQLite store):
 
-* The store is code in `src/shared` that runs unchanged in the daemon and in a phone's page, on the X-Libs `SqlDatabase`. It imports nothing from the DOM or from `node:` modules.
+* The store is code in `src/shared` that runs unchanged in the daemon and in a phone's page, on the X-App `SqlDatabase`. It imports nothing from the DOM or from `node:` modules.
 * An app with several parts, such as a workout log and a food diary, keeps each in its own folder under `src/shared/<feature>/` with its own tables, calls and settings, and a list of features names them. Each feature's migrations are its own, run through `migrate(database, steps, { owner })`, so features change without renumbering each other's steps.
-* Tables are written once as a Drizzle schema (`schema.ts`, with the builders X-Libs re-exports). `drizzle-kit generate` writes each change as a migration, `x-libs-bundle-migrations` turns the migration folders into an `index.ts` the server, the desktop app and the phone's page all import, and `synced_tables(...)` reads the sync list, parents first, from the schema's primary keys. A released migration is never edited, only followed by a new one; data a migration only moves is made with `drizzle-kit generate --custom`.
+* Tables are written once as a Drizzle schema (`schema.ts`, with the builders X-App re-exports). `drizzle-kit generate` writes each change as a migration, `x-app-bundle-migrations` turns the migration folders into an `index.ts` the server, the desktop app and the phone's page all import, and `synced_tables(...)` reads the sync list, parents first, from the schema's primary keys. A released migration is never edited, only followed by a new one; data a migration only moves is made with `drizzle-kit generate --custom`.
 * Rows have ids that every device can make on its own, such as a UUID, and never an auto-incrementing key, since two devices would reuse it.
-* Queries go through `drizzle_of(database)` from X-Libs. Raw SQL is for what Drizzle does not express, such as `COLLATE NOCASE` or ordering by `rowid`.
+* Queries go through `drizzle_of(database)` from X-App. Raw SQL is for what Drizzle does not express, such as `COLLATE NOCASE` or ordering by `rowid`.
 * The browser page imports only types from the stores, plus a small file that names the calls and the page's api, so the stores, their migrations and Drizzle stay out of the bundle a server sends. A page that needs a setting's default reads it from a plain settings file with no imports, or from the server, never from a store.
 * A call that only reads is named `list_`, `get_`, `search_`, `lookup_` or `export_`, and any other call announces a change to the other pages and devices.
 
@@ -81,7 +81,7 @@ The daemon:
 * The daemon is one plain Node program in `src/server`, with no Electron in it. It owns everything that can run without a screen: the store and its migrations, accounts, the API and MCP, sync, backups, history, plugins, notifications, and scheduled and background work.
 * A feature goes in the daemon unless it cannot run there. Work that runs on a timer, such as a reminder, never lives in a UI.
 * It serves the web page, the app's calls and their change events, `/api/openapi.json` and `/api/mcp`. One set of handlers answers every UI, wherever it runs.
-* On a server it runs headless, from the app's NixOS module or `npm start`, listening on a network address behind the X-Libs sign-in, over https or behind a reverse proxy.
+* On a server it runs headless, from the app's NixOS module or `npm start`, listening on a network address behind the X-App sign-in, over https or behind a reverse proxy.
 * On a desktop it runs as the app's local daemon, set out below.
 
 The UIs:
@@ -91,12 +91,12 @@ The UIs:
 * The desktop and Android apps share one list of daemons to connect to, the way Deluge's connection manager does: "This computer" for the local daemon, and remote daemons by address, each signed in with the user's name and password and given a token of its own named for the device. A UI opens on the daemon it used last, and the user switches daemons from Settings.
 * The main process forwards the preload bridge's calls to the chosen daemon, over its socket or over https, and passes the daemon's events on to every window. The page does not know where its daemon runs.
 * An Android app connects to remote daemons, since Android cannot keep a Node daemon running. A phone app that must work offline keeps its own copy and syncs it with a daemon, doing the daemon's work while it is open and handing the operating system ahead of time whatever must happen while it is closed, such as notifications through Capacitor's local notifications.
-* An app whose phone must stay reachable while the app is closed, such as X-Control, where the phone is itself a device the computers talk to, runs its phone-side work in an Android foreground service through X-Libs' `XLibsForegroundService`, with a notification that says so. The page drives that service as it would a daemon, and it never needs a remote daemon to work.
+* An app whose phone must stay reachable while the app is closed, such as X-Control, where the phone is itself a device the computers talk to, runs its phone-side work in an Android foreground service through X-App's `XLibsForegroundService`, with a notification that says so. The page drives that service as it would a daemon, and it never needs a remote daemon to work.
 
 Portals and personal apps:
 
 * An app whose daemon belongs on one host, such as X-Nix, X-Backups or X-Monitor, which manage other machines, offers no "This computer": its desktop and Android apps are portals onto a remote daemon and never run one of their own.
-* A personal app, such as X-Tasks, X-Fitness, X-Budget or X-Media-Tracker, offers "This computer". Its local daemon can sync with a remote daemon through the X-Libs sync modules, so a laptop keeps working offline and catches up when it reconnects.
+* A personal app, such as X-Tasks, X-Fitness, X-Budget or X-Media-Tracker, offers "This computer". Its local daemon can sync with a remote daemon through the X-App sync modules, so a laptop keeps working offline and catches up when it reconnects.
 
 Work that belongs to the device:
 
@@ -117,18 +117,18 @@ Starting and stopping a local daemon:
 * Closing the window ends only the window. The tray icon, where the app has one, keeps the main process open. The daemon keeps running until the user stops it from Settings or the tray, or turns off "Keep running in the background", after which it stops once the last window has closed.
 * The daemon sends the app's desktop notifications, as [Notifications](#notifications) sets out.
 
-The shared pieces are in X-Libs: `local_daemon` for the socket, the calls over it, the events and starting the daemon, `connections`, `daemon_link` and `daemon_router` for the list of daemons and a main process that forwards to the chosen one, `server/call_table` for serving a table of calls on it, `autostart` for the login entry, `electron/tray` for the tray icon, and `agent/scheduled_notices` for reminders due at set moments.
+The shared pieces are in X-App: `local_daemon` for the socket, the calls over it, the events and starting the daemon, `connections`, `daemon_link` and `daemon_router` for the list of daemons and a main process that forwards to the chosen one, `server/call_table` for serving a table of calls on it, `autostart` for the login entry, `electron/tray` for the tray icon, and `agent/scheduled_notices` for reminders due at set moments.
 
 ## APIs and MCP
 
 Other programs reach an app's data as well as its own page does, so it can be scripted, linked to other tools and used by an AI client. Every daemon:
 
 * Every call the page makes, except calls marked `page_only`, is open to other programs through the server's API, behind the same sign-in. A program sends a token made on the user's account page as a bearer header.
-* Every call is described once in an X-Libs `api_spec`: what it does in plain words, and a JSON Schema for each argument. The spec is typed against the app's method table, so a call without one fails to compile.
+* Every call is described once in an X-App `api_spec`: what it does in plain words, and a JSON Schema for each argument. The spec is typed against the app's method table, so a call without one fails to compile.
 * The server serves the same calls three ways from that one spec:
   * the app's own API, `POST /api/call/<method>` for every app, which takes the arguments as a JSON list in order or by name as a JSON object;
   * `GET /api/openapi.json`, an OpenAPI 3.1 document from `openapi_document`;
-  * `/api/mcp`, every call except calls marked `page_only` as an MCP tool over streamable HTTP from X-Libs `server/mcp`, which wraps the official SDK (`@modelcontextprotocol/server`).
+  * `/api/mcp`, every call except calls marked `page_only` as an MCP tool over streamable HTTP from X-App `server/mcp`, which wraps the official SDK (`@modelcontextprotocol/server`).
 * A call that only reads is named so (`list_`, `get_`, `search_` and the like) and is marked read-only to MCP clients. A change made through the API or MCP reaches open pages and devices as if made in the app.
 * A call or setting that only the user may change, such as a program's own rights or limits, is marked `page_only` in the app's `api_spec`. Where the answer depends on the arguments, such as writing one particular setting, the app gives `page_only_calls` a rule over them. Only a signed-in browser, or the desktop window through the daemon's socket, makes such a call: every token, a device's included, is refused, and MCP neither offers nor runs it. The OpenAPI document marks it. An app with nothing only the user may change marks nothing; the marking is for apps where a program or an AI client must not widen its own rights, such as CODEX's approvals and action policy. See [Accounts and signing in](#accounts-and-signing-in) for the tokens.
 * Values cross the API in the units the app stores, and the spec says which.
@@ -187,11 +187,11 @@ Devices and programs:
 
 * A desktop or phone app that syncs signs in from `SyncSettings` with the same name and password, and gets a token of its own, named for the device. Stop syncing gives the token back.
 * A program uses a token made on Your account, read-only unless the user unticks that, sent as `Authorization: Bearer <token>`. A token cannot change the account it belongs to.
-* A token made when a device signs in for sync is a device's token, and one made on Your account is a program's token. X-Libs `server/account_store` keeps the difference as the token's `kind`, and `server/viewers`' `is_user_or_device` tells the user at the page or on one of their devices from a program. See [APIs and MCP](#apis-and-mcp) for the calls only the user may make.
+* A token made when a device signs in for sync is a device's token, and one made on Your account is a program's token. X-App `server/account_store` keeps the difference as the token's `kind`, and `server/viewers`' `is_user_or_device` tells the user at the page or on one of their devices from a program. See [APIs and MCP](#apis-and-mcp) for the calls only the user may make.
 
 ## Settings, sync, backups and history
 
-An app's data is kept the same way in every app, so users get the same safety everywhere and X-Libs holds one copy of the code. The modules are named in the [X-Libs README](https://github.com/x-tech-laboratories/X-Libs#readme).
+An app's data is kept the same way in every app, so users get the same safety everywhere and X-App holds one copy of the code. The modules are named in the [X-App README](https://github.com/x-tech-laboratories/X-App#readme).
 
 Settings:
 
@@ -200,13 +200,13 @@ Settings:
 
 Sync:
 
-* Every copy of an app's data syncs: a local daemon with a remote daemon, and a phone's offline copy with a daemon, so the data is the same everywhere and each copy keeps working offline. A portal app, whose one daemon is the only copy, has nothing to sync. Sync goes through X-Libs: `create_sync_engine` on the app's store, `register_sync_routes` on the daemon others sync with, and `create_sync_client` on each local daemon or phone. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
+* Every copy of an app's data syncs: a local daemon with a remote daemon, and a phone's offline copy with a daemon, so the data is the same everywhere and each copy keeps working offline. A portal app, whose one daemon is the only copy, has nothing to sync. Sync goes through X-App: `create_sync_engine` on the app's store, `register_sync_routes` on the daemon others sync with, and `create_sync_client` on each local daemon or phone. An app does not write its own sync, sync its database file through a file-sync tool, or use a CRDT library.
 * The newest write of each value wins. The first time a device connects, the user chooses which copy wins, and the other is backed up before it is replaced.
 * A device keeps the server's address and token through `file_sync_storage` on the desktop and `local_sync_storage` on a phone, never in the synced data. Settings that belong to one device are listed in the engine's `local_keys` or `local_columns`.
 * The synced rows that hold settings only the user may change are named in `register_sync_routes`' `device_only`, so only the user's own devices sync them and a program's token cannot replace the server's data once that is set. See [APIs and MCP](#apis-and-mcp) for the calls.
 * The device's bridge answers the `SyncDeviceMethods` through `sync_device_methods`. Its settings page shows `SyncSettings` under a section called "Sync", where the device signs in with the user's name and password and asks before one copy replaces the other. A browser shows no sync section, since it is already on the daemon.
 * Every app that syncs shows `SyncButton` first in its sidebar's foot (the `Shell`'s `sidebar_foot`) on every device that syncs: whether the device is synced and how many changes wait to go out, syncing on a click, or opening the Sync settings when sync needs the user. It is always shown: while sync is not set up its label says "Sync not set up" and a click opens the Sync settings. A browser shows none, and an app does not draw its own.
-* A server whose https certificate the device refuses, such as a home server's self-signed one, is reached only after the user trusts it, through X-Libs' certificates. The dialog shows the certificate and what is wrong with it, and trusts that exact certificate for that host alone. The desktop keeps them with `create_certificate_trust`, honours them with `trust_in_session`, and sends sync through `trusting_fetch`. A phone uses `phone_certificates`, whose plugin lets the WebView through. The page passes `certificates` to `SyncSettings`, places `SyncCertificatePrompt` once, and lists `TrustedCertificates` in the Sync section. An app never turns certificate checks off, trusts a whole authority for every host, or writes its own certificate handling.
+* A server whose https certificate the device refuses, such as a home server's self-signed one, is reached only after the user trusts it, through X-App's certificates. The dialog shows the certificate and what is wrong with it, and trusts that exact certificate for that host alone. The desktop keeps them with `create_certificate_trust`, honours them with `trust_in_session`, and sends sync through `trusting_fetch`. A phone uses `phone_certificates`, whose plugin lets the WebView through. The page passes `certificates` to `SyncSettings`, places `SyncCertificatePrompt` once, and lists `TrustedCertificates` in the Sync section. An app never turns certificate checks off, trusts a whole authority for every host, or writes its own certificate handling.
 
 Backups:
 
@@ -227,7 +227,7 @@ History:
 Import and export:
 
 * Every catalogue an app keeps, such as its titles, tasks, transactions or workouts, can be exported and imported as JSON and as CSV, so users can take their data anywhere and bring it back.
-* A JSON export is one file holding every table of the catalogue: `{ app, kind, version, exported_at, tables }`, each table a list of rows by column name. A CSV export is one file per table, named for the table, with a header row of column names, written and read through X-Libs' `csv`.
+* A JSON export is one file holding every table of the catalogue: `{ app, kind, version, exported_at, tables }`, each table a list of rows by column name. A CSV export is one file per table, named for the table, with a header row of column names, written and read through X-App's `csv`.
 * An import reads either format into the same rows. It refuses a file made for another app or a newer version, and it matches an item already kept by its id: where the two differ, the user chooses what to keep before anything is written.
 * All settings export and import as one JSON file, `{ app, kind: "settings", version, exported_at, settings }`. Settings that belong to one device are left out, and an import ignores keys the app does not know.
 * An export leaves out passwords, tokens and keys for other services.
@@ -238,9 +238,17 @@ Where these do not fit, such as an app whose data is a cache of files or of anot
 
 ## Shared code
 
-Code that two apps need lives in `@x-tech-laboratories/x-libs` (repo X-Libs). Styling lives in `@x-tech-laboratories/halon` (repo X-Themes). An app imports it and does not write its own copy.
+Code that two apps need lives in `@x-tech-laboratories/x-app` (repo X-App). Styling lives in `@x-tech-laboratories/halon` (repo X-Themes). An app imports it and does not write its own copy.
 
-Comes from X-Libs:
+X-App is the base every app is built on. Besides the shared modules and widgets, it runs the app: the server, the desktop app's daemon and window, the phone host, and the page in its `Shell` with the Settings and History pages, sign-in, sync, backups, plugins and notifications. An app describes itself once and adds only its own features:
+
+* `define_app` names the app, its port, its features, its pages, its notifications and its plugins. A feature brings its tables, migrations, calls, their `api_spec`, setting defaults and histories; a page brings a sidebar entry, a view and settings sections.
+* `run_server(app)`, `run_daemon(app)`, `run_desktop(app)`, `run_preload(app)` and `render_app(app_pages)` are an app's entry points, one line each.
+* An app changes the base through slots for the layout's parts and hooks on the server, the daemon and the desktop process. When it needs a hook that does not exist, X-App gains it; an app never keeps a copy of a base file.
+* X-App's presets carry the configs (`config/tsconfig/*.json` to extend, and `vite_config`, `electron_vite_config`, `vitest_config` and `capacitor_config`), its flake's `lib` carries the Nix package, module and shells, and its reusable workflows carry CI and Dependabot's auto-merge.
+* A new app starts from `npx x-app-new X-Foo`, which writes these few files once.
+
+Comes from X-App:
 
 * Agents and long runs: `agent/*` and `server/agents/*` (`AgentHub`, `LongRuns`, `TaskRunner`, the key login and the protocol).
 * Accounts and signing in: `server/account_store`, `server/account_sign_in`, `server/passwords`, `server/hash_password`, `server/totp`, `server/oidc`, and on the page `web/accounts`, `web/react/sign_in` and `web/react/accounts`; `agent/keys` for agent keys.
@@ -254,38 +262,41 @@ Comes from Halon:
 
 * The tokens (`halon-tokens.css`) and the widget stylesheets (`halon.css`). An app imports them once and does not restyle a widget.
 
-Adding to X-Libs:
+Adding to X-App:
 
-* Porting an app runs both ways: a port also pulls into X-Libs every feature the app has that X-Libs lacks and another app could use, so all the apps gain it.
-* Code that a second app needs moves into X-Libs, in a branch of X-Libs, and the app then imports it. The app does not keep a fork or a patched copy.
+* Porting an app runs both ways: a port also pulls into X-App every feature the app has that X-App lacks and another app could use, so all the apps gain it.
+* Code that a second app needs moves into X-App, in a branch of X-App, and the app then imports it. The app does not keep a fork or a patched copy.
+* Every reusable UI element, widget and pattern an app has moves into X-App as the app is next touched, and every reusable style into Halon. Only what no other app could use stays in the app.
+* Before an app adds a widget, it looks in X-App; a near match is extended there rather than copied.
+* Two apps holding the same piece is a defect: whoever finds it moves it into X-App, or lists it in X-App's `docs/TODO.md`.
 * A module is one file per concern under a subpath: `server/...`, `agent/...`, `web/...`, `<name>.ts` at the top for plain helpers.
 * A module imports nothing from an app.
-* A widget has a test beside its behaviour and a short entry in the X-Libs README table.
+* A widget has a test beside its behaviour and a short entry in the X-App README table.
 * A widget that needs a style gets it in Halon first.
 
 Widgets and external libraries:
 
-* Every UI feature that two apps need lives in X-Libs.
-* X-Libs either writes the feature or wraps an external library.
+* Every UI feature that two apps need lives in X-App.
+* X-App either writes the feature or wraps an external library.
 * An external library is chosen only when it matches or exceeds the in-house behaviour feature by feature.
-* The library is wrapped inside X-Libs. An app never imports it directly.
-* X-Libs adds only its own improvements and the parts the library lacks on top: Halon markup, accessibility, phone layout and keyboard paths.
-* The comparison that justified the choice is written in the X-Libs README row or the module header.
+* The library is wrapped inside X-App. An app never imports it directly.
+* X-App adds only its own improvements and the parts the library lacks on top: Halon markup, accessibility, phone layout and keyboard paths.
+* The comparison that justified the choice is written in the X-App README row or the module header.
 * Current choices:
-  * `@tanstack/react-table` (headless) holds the table state inside the X-Libs `DataTable`.
-  * Drizzle ORM (pinned to 1.0.0-rc.5 until 1.0 is stable) types SQLite queries and writes migrations inside the X-Libs `drizzle` module; an app writes its schema with the builders X-Libs re-exports and never imports `drizzle-orm`.
+  * `@tanstack/react-table` (headless) holds the table state inside the X-App `DataTable`.
+  * Drizzle ORM (pinned to 1.0.0-rc.5 until 1.0 is stable) types SQLite queries and writes migrations inside the X-App `drizzle` module; an app writes its schema with the builders X-App re-exports and never imports `drizzle-orm`.
   * Shortcuts, menus, trees, dates, the Electron bridge and the window helpers are in-house.
   * Rejected: tinykeys and hotkeys-js, electron-window-state, dnd-kit and pragmatic-drag-and-drop for now, and CRDT libraries.
 
 Versioning:
 
-* X-Libs and Halon use semver. A breaking change raises the major version and states what to change in the commit message.
-* `react`, `react-dom`, `fastify` and `@fastify/websocket` are `peerDependencies` of X-Libs, marked optional in `peerDependenciesMeta`, so a CLI or an agent installs neither.
-* An app depends on a caret range of X-Libs and Halon and installs its own single copy of React and Fastify.
+* X-App and Halon use semver. A breaking change raises the major version and states what to change in the commit message.
+* `react`, `react-dom`, `fastify` and `@fastify/websocket` are `peerDependencies` of X-App, marked optional in `peerDependenciesMeta`, so a CLI or an agent installs neither.
+* An app depends on a caret range of X-App and Halon and installs its own single copy of React and Fastify.
 
 ## Plugins
 
-Every app can be extended with plugins, the same way in every app, so a plugin author meets one manifest, one set of extension points and one settings page. Every app runs the X-Libs plugin host, even before anyone has written a plugin for it, and its own features that others could replace are written as bundled plugins. The modules are `plugins`, `plugin_folder` and `server/plugin_files` for any side of the app, and `web/plugin_imports` and `web/react/plugins` on the page. They are named in the [X-Libs README](https://github.com/x-tech-laboratories/X-Libs#readme).
+Every app can be extended with plugins, the same way in every app, so a plugin author meets one manifest, one set of extension points and one settings page. Every app runs the X-App plugin host, even before anyone has written a plugin for it, and its own features that others could replace are written as bundled plugins. The modules are `plugins`, `plugin_folder` and `server/plugin_files` for any side of the app, and `web/plugin_imports` and `web/react/plugins` on the page. They are named in the [X-App README](https://github.com/x-tech-laboratories/X-App#readme).
 
 What a plugin is:
 
@@ -300,7 +311,7 @@ Where plugins come from:
 * Bundled plugins are added with `host.add` and need nothing else. An app's own features that others could replace, such as a video source or an importer, are written as bundled plugins.
 * Folder plugins are optional. Each subfolder of the app's plugins folder holds a `package.json` with `"type": "module"` and `"x-plugin": { "server": "dist/server.js", "web": "dist/web.js" }`, one bundled ESM file per side. The server, agent and desktop daemon read them with `load_plugin_folder`; the page gets its side from `register_plugin_files` and `load_plugin_modules`, after `share_modules` has handed over the page's React.
 * A web folder plugin is imported from a `data:` URL, so the page's Content-Security-Policy has to allow `data:` scripts for it.
-* Folder plugins run with the app's full rights and are not sandboxed. The app's README says so, and only plugins the user chose to install are loaded. An app that wants third-party plugins from strangers asks first, since that needs a sandbox X-Libs does not have.
+* Folder plugins run with the app's full rights and are not sandboxed. The app's README says so, and only plugins the user chose to install are loaded. An app that wants third-party plugins from strangers asks first, since that needs a sandbox X-App does not have.
 
 In the page:
 
@@ -315,9 +326,9 @@ Every app tells its user what they need to know while it is not in front of them
 Where notifications come from:
 
 * The daemon or the server decides when to notify, never the page, so notifications arrive with every window closed.
-* On the desktop they are shown through X-Libs' `agent/desktop_notify`: by the local daemon, or by the desktop app's main process for a remote daemon it is connected to. Clicking one opens the app's link for the item, which opens the window on it.
-* On a phone, the page hands them to the operating system ahead of time through Capacitor's local notifications, wrapped in X-Libs, so they arrive while the app is closed.
-* A server sends them through the channels of X-Libs' `server/notify`: ntfy, a webhook, mail and Apprise. A channel's password or token is read from a file, never kept in the app's settings.
+* On the desktop they are shown through X-App's `agent/desktop_notify`: by the local daemon, or by the desktop app's main process for a remote daemon it is connected to. Clicking one opens the app's link for the item, which opens the window on it.
+* On a phone, the page hands them to the operating system ahead of time through Capacitor's local notifications, wrapped in X-App, so they arrive while the app is closed.
+* A server sends them through the channels of X-App's `server/notify`: ntfy, a webhook, mail and Apprise. A channel's password or token is read from a file, never kept in the app's settings.
 * A notification about an item has a key, so a newer one about the same item replaces the old one instead of piling up.
 
 In the page:
@@ -329,28 +340,30 @@ An app with nothing to tell its user while it is closed writes so in its `README
 
 ## Repository layout and scripts
 
-Reference layout (X-Backups):
+Reference layout (as `x-app-new` writes it):
 
 ```
 src/
-  server/    Fastify app, config, stores, schedulers, main.ts
-  web/       React page: index.html, main.tsx, views/, app.css
+  app.ts     define_app: the app's name, port, features and pages
+  features/  one folder per feature: shared/ (tables, migrations, calls, api), web/ (pages, settings sections)
+  server/    main.ts: run_server(app)
+  web/       index.html, main.tsx: render_app(app_pages), app.css
   agent/     the agent that runs on managed hosts: main.ts
   shared/    types and protocol used by more than one of the above
 tests/       one *.test.ts per behaviour, mirroring src/
 docs/        written documentation
-.github/workflows/ci.yml
-.github/workflows/dependabot-auto-merge.yml
+.github/workflows/ci.yml                     calls X-App's app-ci.yml
+.github/workflows/dependabot-auto-merge.yml  calls X-App's app-dependabot-auto-merge.yml
 .github/dependabot.yml
 .oxlintrc.json  (optional)
-nix/         flake.nix, flake.lock, shell.nix, package.nix, module.nix, agent-module.nix
-tsconfig/    tsconfig.base.json, tsconfig.server.json, tsconfig.web.json
+nix/         flake.nix calling X-App's lib, flake.lock, shell.nix, module.nix and agent-module.nix only when they add options
+tsconfig/    tsconfig.base.json, tsconfig.server.json, tsconfig.web.json, each extending X-App's preset
 config.example.json
 tsconfig.json
 vite.config.ts
 ```
 
-* A desktop app adds `src/main` and `src/preload` and builds with `electron.vite.config.ts`; its local daemon is the same `src/server` program. A mobile app adds `capacitor.config.json` and the generated `android/` project. A target the app does not have gets no folder.
+* A desktop app adds `src/daemon`, `src/main` and `src/preload`, each a call into X-App, and builds with `electron.vite.config.ts`. A mobile app adds `capacitor.config.json` and the generated `android/` project. A target the app does not have gets no folder.
 * `tsconfig.json` at the root holds `references` only, since editors and `tsc -b` look for it there. The base and each target's `tsconfig.<target>.json` sit in `tsconfig/`, with their `include` paths starting `../`: `server` and `agent` use the Node types; `web` uses `jsx: react-jsx`, the `DOM` lib and `vite/client`.
 * `config.example.json` is the complete, working default config. `dev:server` runs against it.
 * `nix/` holds everything Nix: the package, the NixOS modules, `flake.nix` with its `flake.lock`, and `shell.nix`. The flake exposes the package, the modules and a dev shell, and is reached with `?dir=nix` (`github:x-tech-laboratories/X-Foo?dir=nix`, `nix build ./nix#default`, `nix develop ./nix`). `nix-shell nix/shell.nix` gives the same shell without flakes.
@@ -369,14 +382,14 @@ Script names, the same in every app:
 | `test`        | `vitest run`                                               |
 | `coverage`    | `vitest run --coverage`                                    |
 | `lint`        | `oxlint`                                                   |
-| `db:generate` | `drizzle-kit generate` for every feature, then `x-libs-bundle-migrations` (apps with a Drizzle store) |
+| `db:generate` | `drizzle-kit generate` for every feature, then `x-app-bundle-migrations` (apps with a Drizzle store) |
 
 An app adds its own commands (`hash-password`, `seed`) beside these and does not rename them.
 
 ## Code conventions
 
 * TypeScript strict, ESM only. `package.json` has no `"type": "commonjs"`.
-* The shared base is `X-Libs/tsconfig.base.json`: `strict`, `allowImportingTsExtensions`, `verbatimModuleSyntax`, `erasableSyntaxOnly`, `moduleDetection: force`, and the unused-code and fallthrough checks. An app's configs set the same flags.
+* The shared base is X-App's `config/tsconfig/base.json`, which an app's `tsconfig/tsconfig.base.json` extends: `strict`, `allowImportingTsExtensions`, `verbatimModuleSyntax`, `erasableSyntaxOnly`, `moduleDetection: force`, and the unused-code and fallthrough checks. An app's configs set the same flags.
 * Relative imports end in `.ts` or `.tsx`. Node runs the server's `.ts` files directly; the build rewrites the extensions for packages.
 * `erasableSyntaxOnly` rules out `enum`, `namespace` and constructor parameter properties. Use unions, objects and plain fields.
 * Type-only imports use `import type`.
@@ -444,10 +457,10 @@ test: {
 Where it runs:
 
 * Local runs cover only the files changed, plus one `npm run coverage` before a pull request to commit a raised floor. CI runs the whole suite.
-* CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main`, on pull requests and on `workflow_dispatch`: Node 24, `npm ci`, `npm run build`, `npm run coverage`, a check that the floor in `vitest.config.ts` is committed, `npm run lint`. X-Libs carries it. An app with a flake adds a `nix` job that runs `nix build ./nix#default`, since that package is what TechNet deploys.
+* CI is one GitHub Actions workflow, `.github/workflows/ci.yml`, on push to `main`, on pull requests and on `workflow_dispatch`: Node 24, `npm ci`, `npm run build`, `npm run coverage`, a check that the floor in `vitest.config.ts` is committed, `npm run lint`. X-App carries it. An app with a flake adds a `nix` job that runs `nix build ./nix#default`, since that package is what TechNet deploys.
 * A pull request fails when coverage drops below the floor, and when it raises coverage past the floor without committing the new one.
 * `main` takes changes only through pull requests whose CI passes: a "Protect main" ruleset blocks deletion and force pushes, requires a pull request, and requires the CI job and the `nix` job, and the repository allows auto-merge.
-* Dependabot keeps the npm dependencies current: `.github/dependabot.yml` has a weekly `npm` entry with two groups, `x-tech` for `@x-tech-laboratories/*`, so the Halon peer of X-Libs moves with it, and `npm` for third-party patch and minor updates; a third-party major update comes in its own pull request. The entry exempts `@x-tech-laboratories/*` from Dependabot's cooldown (`cooldown: exclude: ["@x-tech-laboratories/*"]`), which would otherwise hold back every release for three days; revisit that once X-Libs stabilizes and releases slow down. X-Libs carries the same file.
+* Dependabot keeps the npm dependencies current: `.github/dependabot.yml` has a weekly `npm` entry with two groups, `x-tech` for `@x-tech-laboratories/*`, so the Halon peer of X-App moves with it, and `npm` for third-party patch and minor updates; a third-party major update comes in its own pull request. The entry exempts `@x-tech-laboratories/*` from Dependabot's cooldown (`cooldown: exclude: ["@x-tech-laboratories/*"]`), which would otherwise hold back every release for three days; revisit that once X-App stabilizes and releases slow down. X-App carries the same file.
 * `.github/workflows/dependabot-auto-merge.yml` reads each Dependabot pull request with `dependabot/fetch-metadata` and turns on auto-merge for the `x-tech` group at any version and for third-party patch and minor updates, so they merge once the required checks pass. Third-party major updates are merged by hand. An app that publishes on push to `main` lets its scheduled rebuild publish merged bumps, since a merge made with the workflow's token starts no push workflow.
 * An app whose flake packages npm dependencies builds them with nixpkgs' `importNpmLock` (`npmDeps = importNpmLock { npmRoot = ../.; }` and `npmConfigHook = importNpmLock.npmConfigHook`), so there is no `npmDepsHash` to keep in step with `package-lock.json`.
 
@@ -504,7 +517,9 @@ Delivery:
 
 Each app as it is today. The [Standards Matrix](/standards/matrix) shows which parts of this standard each app meets.
 
-No app answers the item calls in [APIs and MCP](#apis-and-mcp) yet. X-Libs gains the shared shapes first, then each app follows when it is next touched.
+X-App is X-Libs under its new name, and the tables below name the X-Libs versions apps run today. No app runs on X-App's base yet: X-Budget moves first, then X-Fitness, X-Media-Tracker, X-Dev and X-Control, then the others as each is next touched, each also moving its reusable pieces into X-App. The plan is `docs/x-app-plan.md` in X-App.
+
+No app answers the item calls in [APIs and MCP](#apis-and-mcp) yet. X-App gains the shared shapes first, then each app follows when it is next touched.
 
 | App | Stack today | Target | Gap |
 | --- | --- | --- | --- |
@@ -544,32 +559,33 @@ Toolchain gaps (TypeScript below 7, Node below 24, a missing `lint` script, miss
 * [ ] `resources/icon.svg` is an X-Tech style icon, and the desktop, Android and web icons are generated from it.
 * [ ] Repo has `LICENSE` (GPL-3.0-or-later), `README.md`, `nix/flake.nix`, `nix/shell.nix`.
 * [ ] `package.json`: `"engines": { "node": ">=24" }`, `"license": "GPL-3.0-or-later"`, ESM.
-* [ ] Layout is `src/server|web|agent|shared`, plus `src/main|preload` for desktop, `tests/`, `docs/`, `nix/`.
+* [ ] Started from `x-app-new`, or laid out as it writes: `src/app.ts`, `src/features/`, `src/server|web|agent|shared`, plus `src/daemon|main|preload` for desktop, `tests/`, `docs/`, `nix/`.
+* [ ] The server, daemon, desktop, preload and page entry points are X-App's `run_server`, `run_daemon`, `run_desktop`, `run_preload` and `render_app`, given the app's `define_app`; no copy of a base file.
 * [ ] The app ships on the web, the desktop and Android from one `src/web` tree, or its `README.md` names the limit that rules a target out.
 * [ ] All of the app's work runs in one daemon that runs on any host; the web, desktop and Android apps are UIs that connect to a local or a remote daemon, and a portal app's UIs connect only to a remote one.
-* [ ] The root `tsconfig.json` references one `tsconfig/tsconfig.<target>.json` per target, each with the strict flags from `tsconfig/tsconfig.base.json`.
+* [ ] The root `tsconfig.json` references one `tsconfig/tsconfig.<target>.json` per target, each extending `tsconfig/tsconfig.base.json`, which extends X-App's preset.
 * [ ] Scripts `dev:server`, `dev:web`, `build`, `start`, `test`, `coverage`, `lint` exist and use the standard commands.
 * [ ] `config.example.json` runs the app as it stands.
-* [ ] Depends on `@x-tech-laboratories/x-libs` and `@x-tech-laboratories/halon`; no re-implemented sign-in, agent, formatting, widget or theme code.
+* [ ] Depends on `@x-tech-laboratories/x-app` and `@x-tech-laboratories/halon`; no re-implemented sign-in, agent, formatting, widget or theme code.
 * [ ] Imports Halon's tokens and stylesheet once; `app.css` holds layout only.
-* [ ] Signing in uses the X-Libs accounts (`register_accounts`, `SignInForm`, `AccountView`, `users_settings`) and says "Sign in" and "Sign out"; agents use the X-Libs agent modules.
+* [ ] Signing in uses the X-App accounts (`register_accounts`, `SignInForm`, `AccountView`, `users_settings`) and says "Sign in" and "Sign out"; agents use the X-App agent modules.
 * [ ] Every call has an `api_spec` entry, and the server answers it at `POST /api/call/<method>` and offers `/api/openapi.json` and `/api/mcp`.
 * [ ] An app with calls or settings that only the user may change marks them `page_only`, and names the synced rows they live in in `device_only`.
 * [ ] The app answers `list_item_kinds`, `search_items`, `get_items` and `list_item_changes`, and `get_item_texts` when its items have text beyond their snippet, and its item links are `x-<app>://<kind>/<id>`.
 * [ ] A Settings page in the sidebar's foot, with Users and Tokens sections for an admin, and a History page in the sidebar.
-* [ ] Data syncs between the server and every device through the X-Libs sync modules.
+* [ ] Data syncs between the server and every device through the X-App sync modules.
 * [ ] An app that syncs shows `SyncButton` in its sidebar's foot on every device that syncs.
-* [ ] A server with a self-signed or untrusted certificate is reached only after the user trusts it, through the X-Libs certificate modules.
-* [ ] Data is backed up daily through the X-Libs backups, before every replace, with a Backups section in settings.
+* [ ] A server with a self-signed or untrusted certificate is reached only after the user trusts it, through the X-App certificate modules.
+* [ ] Data is backed up daily through the X-App backups, before every replace, with a Backups section in settings.
 * [ ] Items users edit keep a history through `create_history`, shown on the History page.
 * [ ] Every catalogue exports and imports as JSON and CSV, and all settings as one JSON file.
-* [ ] The app runs the X-Libs plugin host, with its bundled plugins, a Plugins section in settings and its trust note in the README.
-* [ ] The daemon or server notifies the user through X-Libs' notification modules, with a Notifications section in settings.
+* [ ] The app runs the X-App plugin host, with its bundled plugins, a Plugins section in settings and its trust note in the README.
+* [ ] The daemon or server notifies the user through X-App's notification modules, with a Notifications section in settings.
 * [ ] Tests exist for the behaviour that is written, and `oxlint` is clean.
-* [ ] A CI workflow exists (`.github/workflows/ci.yml`) and checks coverage against a floor in `vitest.config.ts` that only rises, builds every target on `main` and publishes a release from each version tag, and a flake that packages npm dependencies reads them with `importNpmLock` and is built by a `nix` job.
+* [ ] A CI workflow exists (`.github/workflows/ci.yml`, calling X-App's `app-ci.yml`) and checks coverage against a floor in `vitest.config.ts` that only rises, builds every target on `main` and publishes a release from each version tag, and a flake that packages npm dependencies reads them with `importNpmLock` and is built by a `nix` job.
 * [ ] `.github/dependabot.yml` updates npm dependencies weekly in the `x-tech` and `npm` groups, with `@x-tech-laboratories/*` exempt from the cooldown, and `dependabot-auto-merge.yml` merges the `x-tech` group and third-party patch and minor updates once the required checks pass.
 * [ ] `main` has the "Protect main" ruleset with the CI and `nix` checks required, and the repository allows auto-merge.
 * [ ] A rendered test exists for each widget the app adds.
-* [ ] No app-level copy of an X-Libs widget.
+* [ ] No app-level copy of an X-App widget, and no reusable UI element, widget, pattern or style left in the app that belongs in X-App or Halon.
 * [ ] Commits are Conventional Commits.
 * [ ] Any deviation from this document is written in the README with its reason.
